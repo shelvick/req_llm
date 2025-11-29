@@ -90,8 +90,7 @@ defmodule ReqLLM.Providers.AmazonBedrock.Anthropic do
     tools =
       case tools do
         [] ->
-          # Check if body has tool messages - if so, create stubs
-          extract_stub_tools_if_needed(body)
+          AdapterHelpers.extract_stub_tools_from_messages(body)
 
         tools when is_list(tools) ->
           tools
@@ -102,59 +101,14 @@ defmodule ReqLLM.Providers.AmazonBedrock.Anthropic do
         body
 
       tools when is_list(tools) ->
-        # Convert tools to Anthropic format (handles both ReqLLM.Tool structs and stub maps)
         anthropic_tools = Enum.map(tools, &tool_to_anthropic_format/1)
         body = Map.put(body, :tools, anthropic_tools)
 
-        # Add tool_choice if specified
         case Keyword.get(opts, :tool_choice) do
           nil -> body
           choice -> Map.put(body, :tool_choice, choice)
         end
     end
-  end
-
-  # Extract stub tools from messages when Bedrock requires tools but none provided.
-  # This handles multi-turn tool conversations where the caller didn't pass tools
-  # on subsequent requests (works for other providers, but Bedrock is strict).
-  defp extract_stub_tools_if_needed(body) do
-    messages = Map.get(body, :messages, [])
-
-    tool_names =
-      messages
-      |> Enum.flat_map(fn msg ->
-        case msg do
-          %{content: content} when is_list(content) ->
-            content
-            |> Enum.filter(fn
-              %{type: "tool_use", name: _} -> true
-              %{"type" => "tool_use", "name" => _} -> true
-              %{type: "tool_result", tool_use_id: _} -> true
-              %{"type" => "tool_result", "toolUseId" => _} -> true
-              _ -> false
-            end)
-            |> Enum.map(fn
-              %{name: name} -> name
-              %{"name" => name} -> name
-              # For tool_result, we don't have the tool name, so use a generic placeholder
-              # Bedrock just needs toolConfig to be present, not necessarily accurate
-              _ -> "__tool_result_placeholder__"
-            end)
-
-          _ ->
-            []
-        end
-      end)
-      |> Enum.uniq()
-
-    # Create minimal stub tools for validation
-    Enum.map(tool_names, fn name ->
-      %{
-        name: name,
-        description: "Tool stub for multi-turn conversation",
-        input_schema: %{type: "object", properties: %{}}
-      }
-    end)
   end
 
   # Convert ReqLLM.Tool or stub map to Anthropic tool format
@@ -182,15 +136,16 @@ defmodule ReqLLM.Providers.AmazonBedrock.Anthropic do
       provider: :anthropic
     }
 
-    # Delegate to native Anthropic response decoding
     case Anthropic.Response.decode_response(body, model) do
       {:ok, response} ->
-        # For :object operation, extract structured output from tool call
+        input_context = opts[:context] || %ReqLLM.Context{messages: []}
+        merged_response = ReqLLM.Context.merge_response(input_context, response)
+
         final_response =
           if opts[:operation] == :object do
-            AdapterHelpers.extract_and_set_object(response)
+            AdapterHelpers.extract_and_set_object(merged_response)
           else
-            response
+            merged_response
           end
 
         {:ok, final_response}

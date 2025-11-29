@@ -86,4 +86,50 @@ defmodule ReqLLM.Providers.Anthropic.AdapterHelpers do
 
     %{response | object: extracted_object}
   end
+
+  @doc """
+  Extract stub tool definitions from messages when tools are needed but none provided.
+
+  Bedrock and Azure are strict about tool validation in multi-turn conversations.
+  If the conversation history contains tool_use or tool_result blocks, the API
+  requires corresponding tool definitions. This function extracts tool names
+  from the messages and creates minimal stub definitions.
+  """
+  @spec extract_stub_tools_from_messages(map()) :: [map()]
+  def extract_stub_tools_from_messages(body) do
+    messages = Map.get(body, :messages, [])
+
+    tool_names =
+      messages
+      |> Enum.flat_map(fn msg ->
+        case msg do
+          %{content: content} when is_list(content) ->
+            content
+            |> Enum.filter(fn
+              %{type: "tool_use", name: _} -> true
+              %{"type" => "tool_use", "name" => _} -> true
+              %{type: "tool_result", tool_use_id: _} -> true
+              %{"type" => "tool_result", "toolUseId" => _} -> true
+              _ -> false
+            end)
+            |> Enum.map(fn
+              %{name: name} -> name
+              %{"name" => name} -> name
+              _ -> "__tool_result_placeholder__"
+            end)
+
+          _ ->
+            []
+        end
+      end)
+      |> Enum.uniq()
+
+    Enum.map(tool_names, fn name ->
+      %{
+        name: name,
+        description: "Tool stub for multi-turn conversation",
+        input_schema: %{type: "object", properties: %{}}
+      }
+    end)
+  end
 end
