@@ -782,8 +782,7 @@ defmodule ReqLLM.StreamResponse do
   end
 
   defp extract_structured_output_args(%{name: "structured_output", arguments: args})
-       when is_map(args),
-       do: args
+       when is_map(args), do: args
 
   defp extract_structured_output_args(_), do: nil
 

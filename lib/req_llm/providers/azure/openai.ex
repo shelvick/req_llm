@@ -141,46 +141,33 @@ defmodule ReqLLM.Providers.Azure.OpenAI do
   @doc """
   Parses an Azure OpenAI response into ReqLLM format.
 
-  Delegates to the standard OpenAI response parsing since Azure uses
-  the same response format.
-
-  ## Implementation Note
-
-  This function creates temporary Req.Request/Response structs to leverage
-  `ReqLLM.Provider.Defaults.default_decode_response/1`, which handles context
-  merging, object extraction for structured output, and response normalization.
-  This adapter pattern allows the formatter module to reuse the centralized
-  response parsing logic without reimplementing it.
+  Uses the centralized OpenAI response decoding from Provider.Defaults.
   """
   def parse_response(body, model, opts) do
     context = opts[:context] || %ReqLLM.Context{messages: []}
     operation = opts[:operation]
 
-    # Wrap in temporary Req structs to delegate to centralized response parsing
-    temp_req = %Req.Request{
-      options: %{
-        context: context,
-        model: model.id,
-        operation: operation,
-        stream: false
-      }
-    }
+    {:ok, response} = Defaults.decode_response_body_openai_format(body, model)
 
-    temp_resp = %Req.Response{
-      status: 200,
-      body: body
-    }
+    merged_response = ReqLLM.Context.merge_response(context, response)
 
-    {_req, decoded_resp} =
-      ReqLLM.Provider.Defaults.default_decode_response({temp_req, temp_resp})
+    final_response =
+      if operation == :object do
+        extract_and_set_object(merged_response)
+      else
+        merged_response
+      end
 
-    case decoded_resp do
-      %Req.Response{body: parsed_body} ->
-        {:ok, parsed_body}
+    {:ok, final_response}
+  end
 
-      error ->
-        {:error, error}
-    end
+  defp extract_and_set_object(response) do
+    extracted_object =
+      response
+      |> ReqLLM.Response.tool_calls()
+      |> ReqLLM.ToolCall.find_args("structured_output")
+
+    %{response | object: extracted_object}
   end
 
   @doc """

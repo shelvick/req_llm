@@ -526,18 +526,14 @@ defmodule ReqLLM.Providers.OpenAI.ResponsesAPI do
   defp encode_tool_for_responses_api(%ReqLLM.Tool{} = tool) do
     schema = ReqLLM.Tool.to_schema(tool)
     function_def = schema["function"]
-
-    function_def =
-      function_def
-      |> Map.put("strict", true)
-      |> ensure_all_properties_required()
+    params = normalize_parameters_for_strict(function_def["parameters"])
 
     %{
       "type" => "function",
       "name" => function_def["name"],
       "description" => function_def["description"],
-      "parameters" => function_def["parameters"],
-      "strict" => function_def["strict"]
+      "parameters" => params,
+      "strict" => true
     }
   end
 
@@ -545,60 +541,65 @@ defmodule ReqLLM.Providers.OpenAI.ResponsesAPI do
     function_def = tool_schema["function"] || tool_schema[:function]
 
     if function_def do
-      function_def =
-        if is_map_key(tool_schema, "function") do
-          function_def
-          |> Map.put("strict", true)
-          |> ensure_all_properties_required()
-        else
-          function_def
-          |> Map.put(:strict, true)
-          |> ensure_all_properties_required()
-        end
+      name = function_def["name"] || function_def[:name]
+      description = function_def["description"] || function_def[:description]
+      raw_params = function_def["parameters"] || function_def[:parameters]
+      params = normalize_parameters_for_strict(raw_params)
 
       %{
         "type" => "function",
-        "name" => function_def["name"] || function_def[:name],
-        "description" => function_def["description"] || function_def[:description],
-        "parameters" => function_def["parameters"] || function_def[:parameters],
-        "strict" => function_def["strict"] || function_def[:strict]
+        "name" => name,
+        "description" => description,
+        "parameters" => params,
+        "strict" => true
       }
     else
-      tool_schema
+      name = tool_schema["name"] || tool_schema[:name]
+      description = tool_schema["description"] || tool_schema[:description]
+      raw_params = tool_schema["parameters"] || tool_schema[:parameters]
+      params = normalize_parameters_for_strict(raw_params)
+
+      %{
+        "type" => "function",
+        "name" => name,
+        "description" => description,
+        "parameters" => params,
+        "strict" => true
+      }
     end
   end
 
-  defp ensure_all_properties_required(function) do
-    params = function[:parameters] || function["parameters"]
+  defp normalize_parameters_for_strict(nil) do
+    %{
+      "type" => "object",
+      "properties" => %{},
+      "required" => [],
+      "additionalProperties" => false
+    }
+  end
 
-    if params do
-      properties = params[:properties] || params["properties"]
+  defp normalize_parameters_for_strict(params) when is_map(params) do
+    properties = params[:properties] || params["properties"] || %{}
 
-      if properties && is_map(properties) do
-        all_property_names = Map.keys(properties)
+    all_property_names =
+      properties
+      |> Map.keys()
+      |> Enum.map(&to_string/1)
 
-        updated_params =
-          if is_map_key(params, :properties) do
-            params
-            |> Map.put(:required, all_property_names)
-            |> Map.put(:additionalProperties, false)
-          else
-            params
-            |> Map.put("required", Enum.map(all_property_names, &to_string/1))
-            |> Map.put("additionalProperties", false)
-          end
+    %{
+      "type" => "object",
+      "properties" => stringify_keys(properties),
+      "required" => all_property_names,
+      "additionalProperties" => false
+    }
+  end
 
-        if is_map_key(function, :parameters) do
-          Map.put(function, :parameters, updated_params)
-        else
-          Map.put(function, "parameters", updated_params)
-        end
-      else
-        function
-      end
-    else
-      function
-    end
+  defp stringify_keys(map) when is_map(map) do
+    Map.new(map, fn {k, v} ->
+      key = if is_atom(k), do: Atom.to_string(k), else: k
+      value = if is_map(v), do: stringify_keys(v), else: v
+      {key, value}
+    end)
   end
 
   defp encode_tool_choice(nil), do: nil
@@ -686,7 +687,7 @@ defmodule ReqLLM.Providers.OpenAI.ResponsesAPI do
       metadata: %{response_id: body["id"]}
     }
 
-    {object, object_meta} = maybe_extract_object(req, text, tool_calls) || {nil, %{}}
+    {object, object_meta} = maybe_extract_object(req, text) || {nil, %{}}
 
     base_provider_meta = Map.drop(body, ["id", "model", "output_text", "output", "usage"])
     provider_meta = Map.merge(base_provider_meta, object_meta)
@@ -712,45 +713,31 @@ defmodule ReqLLM.Providers.OpenAI.ResponsesAPI do
     {req, %{resp | body: merged_response}}
   end
 
-  # Extract and validate structured object from json_schema responses or tool calls
-  defp maybe_extract_object(req, text, tool_calls) do
-    case req.options[:operation] do
-      :object ->
+  # Extract and validate structured object from json_schema responses
+  defp maybe_extract_object(req, text) do
+    case {req.options[:operation], text} do
+      {:object, text} when is_binary(text) and text != "" ->
         compiled_schema = req.options[:compiled_schema]
-        extract_object_from_source(text, tool_calls, compiled_schema)
+
+        case Jason.decode(text) do
+          {:ok, parsed_object} when is_map(parsed_object) ->
+            case validate_object(parsed_object, compiled_schema) do
+              {:ok, _} -> {parsed_object, %{}}
+              {:error, reason} -> {nil, %{object_parse_error: reason}}
+            end
+
+          {:error, _} ->
+            {nil, %{object_parse_error: :invalid_json}}
+
+          _ ->
+            {nil, %{object_parse_error: :not_an_object}}
+        end
+
+      {:object, _} ->
+        {nil, %{}}
 
       _ ->
         nil
-    end
-  end
-
-  defp extract_object_from_source(text, _tool_calls, compiled_schema)
-       when is_binary(text) and text != "" do
-    case Jason.decode(text) do
-      {:ok, parsed_object} when is_map(parsed_object) ->
-        case validate_object(parsed_object, compiled_schema) do
-          {:ok, _} -> {parsed_object, %{}}
-          {:error, reason} -> {nil, %{object_parse_error: reason}}
-        end
-
-      {:error, _} ->
-        {nil, %{object_parse_error: :invalid_json}}
-
-      _ ->
-        {nil, %{object_parse_error: :not_an_object}}
-    end
-  end
-
-  defp extract_object_from_source(_text, tool_calls, compiled_schema) when is_list(tool_calls) do
-    case ReqLLM.ToolCall.find_args(tool_calls, "structured_output") do
-      nil ->
-        {nil, %{}}
-
-      parsed_object when is_map(parsed_object) ->
-        case validate_object(parsed_object, compiled_schema) do
-          {:ok, _} -> {parsed_object, %{}}
-          {:error, reason} -> {nil, %{object_parse_error: reason}}
-        end
     end
   end
 
