@@ -360,14 +360,22 @@ defmodule Mix.Tasks.ReqLlm.ModelCompat do
     operation = parse_operation_type(opts[:type])
     category = operation_to_category(operation)
 
-    # Propagate AWS credentials from current environment
-    aws_env_vars =
+    # Propagate cloud provider credentials from current environment
+    cloud_env_vars =
       for key <- [
+            # AWS
             "AWS_ACCESS_KEY_ID",
             "AWS_SECRET_ACCESS_KEY",
             "AWS_SESSION_TOKEN",
             "AWS_REGION",
-            "AWS_DEFAULT_REGION"
+            "AWS_DEFAULT_REGION",
+            # Azure (family-specific and universal)
+            "AZURE_OPENAI_API_KEY",
+            "AZURE_OPENAI_BASE_URL",
+            "AZURE_ANTHROPIC_API_KEY",
+            "AZURE_ANTHROPIC_BASE_URL",
+            "AZURE_API_KEY",
+            "AZURE_BASE_URL"
           ],
           value = System.get_env(key),
           not is_nil(value) do
@@ -381,7 +389,7 @@ defmodule Mix.Tasks.ReqLlm.ModelCompat do
         {"REQ_LLM_FIXTURES_MODE", mode},
         {"REQ_LLM_DEBUG", "1"},
         {"REQ_LLM_INCLUDE_RESPONSES", "1"}
-      ] ++ aws_env_vars
+      ] ++ cloud_env_vars
 
     display_spec =
       case LLMDB.model(spec) do

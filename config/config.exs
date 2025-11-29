@@ -5,6 +5,7 @@ config :llm_db,
     allow: %{
       amazon_bedrock: ["*"],
       anthropic: ["*"],
+      azure: ["*"],
       cerebras: ["*"],
       google: ["*"],
       google_vertex: ["*"],
