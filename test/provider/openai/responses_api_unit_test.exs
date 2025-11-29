@@ -142,7 +142,7 @@ defmodule Provider.OpenAI.ResponsesAPIUnitTest do
     end
 
     test "encodes reasoning effort with atom" do
-      request = build_request(provider_options: [reasoning_effort: :medium])
+      request = build_request(reasoning_effort: :medium)
 
       encoded = ResponsesAPI.encode_body(request)
       body = Jason.decode!(encoded.body)
@@ -151,7 +151,7 @@ defmodule Provider.OpenAI.ResponsesAPIUnitTest do
     end
 
     test "encodes reasoning effort with string" do
-      request = build_request(provider_options: [reasoning_effort: "high"])
+      request = build_request(reasoning_effort: "high")
 
       encoded = ResponsesAPI.encode_body(request)
       body = Jason.decode!(encoded.body)
@@ -189,7 +189,7 @@ defmodule Provider.OpenAI.ResponsesAPIUnitTest do
       assert input1["role"] == "user"
       assert input1["content"] == [%{"type" => "input_text", "text" => "Hello"}]
       assert input2["role"] == "assistant"
-      assert input2["content"] == [%{"type" => "input_text", "text" => "Hi there"}]
+      assert input2["content"] == [%{"type" => "output_text", "text" => "Hi there"}]
     end
 
     test "encodes response_format with keyword list schema (converts to JSON schema)" do
@@ -685,6 +685,7 @@ defmodule Provider.OpenAI.ResponsesAPIUnitTest do
       max_tokens: Keyword.get(opts, :max_tokens),
       tools: Keyword.get(opts, :tools),
       tool_choice: Keyword.get(opts, :tool_choice),
+      reasoning_effort: Keyword.get(opts, :reasoning_effort),
       provider_options: provider_opts
     }
 

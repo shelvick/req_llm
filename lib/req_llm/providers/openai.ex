@@ -79,7 +79,7 @@ defmodule ReqLLM.Providers.OpenAI do
       {:ok, response} = ReqLLM.generate_text(
         "openai:gpt-5",
         "Hard problem",
-        provider_options: [reasoning_effort: :high]
+        reasoning_effort: :high
       )
   """
 
@@ -171,7 +171,8 @@ defmodule ReqLLM.Providers.OpenAI do
             :model,
             :provider_options,
             :api_mod,
-            :max_completion_tokens
+            :max_completion_tokens,
+            :reasoning_effort
           ]
 
       request =
@@ -405,12 +406,12 @@ defmodule ReqLLM.Providers.OpenAI do
 
   @doc false
   def supports_json_schema?(%LLMDB.Model{} = model) do
-    get_in(model.capabilities, [:json, :schema]) == true
+    ReqLLM.ModelHelpers.json_schema?(model)
   end
 
   @doc false
   def supports_strict_tools?(%LLMDB.Model{} = model) do
-    get_in(model.capabilities, [:tools, :strict]) == true
+    ReqLLM.ModelHelpers.tools_strict?(model)
   end
 
   @doc false

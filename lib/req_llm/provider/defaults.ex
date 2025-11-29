@@ -390,7 +390,9 @@ defmodule ReqLLM.Provider.Defaults do
         :presence_penalty,
         :seed,
         :stop,
-        :user
+        :user,
+        :reasoning_effort,
+        :reasoning_token_budget
       ] ++ provider_mod.supported_provider_options()
 
     {api_key, extra_option_keys}
@@ -705,52 +707,51 @@ defmodule ReqLLM.Provider.Defaults do
   """
   @spec default_decode_stream_event(map(), LLMDB.Model.t()) :: [ReqLLM.StreamChunk.t()]
   def default_decode_stream_event(%{data: data}, model) when is_map(data) do
-    case data do
-      %{"choices" => [%{"delta" => delta} | _], "usage" => usage} ->
-        # Stream chunk with usage metadata
-        chunks = decode_openai_delta(delta)
-        normalized_usage = parse_openai_usage(usage)
-        usage_chunk = ReqLLM.StreamChunk.meta(%{usage: normalized_usage, model: model.id})
-        chunks ++ [usage_chunk]
+    # 1. Handle choices (content + finish_reason)
+    choices_chunks =
+      case Map.get(data, "choices") do
+        choices when is_list(choices) ->
+          Enum.flat_map(choices, fn choice ->
+            # Extract content from delta
+            delta = Map.get(choice, "delta", %{})
+            content_chunks = decode_openai_delta(delta)
 
-      %{"choices" => [], "usage" => usage} ->
-        # Final usage-only chunk (OpenAI streaming with stream_options.include_usage)
-        normalized_usage = parse_openai_usage(usage)
-        [ReqLLM.StreamChunk.meta(%{usage: normalized_usage, model: model.id, terminal?: true})]
+            # Extract finish_reason
+            finish_reason = Map.get(choice, "finish_reason")
 
-      %{
-        "choices" => [%{"delta" => delta, "finish_reason" => finish_reason} | _],
-        "usage" => usage
-      }
-      when finish_reason != nil ->
-        # Final chunk with finish reason AND usage
-        chunks = decode_openai_delta(delta)
-        normalized_reason = parse_openai_finish_reason(finish_reason)
-        normalized_usage = parse_openai_usage(usage)
+            if finish_reason do
+              normalized_reason = parse_openai_finish_reason(finish_reason)
 
-        meta_chunk =
-          ReqLLM.StreamChunk.meta(%{
-            finish_reason: normalized_reason,
-            usage: normalized_usage,
-            terminal?: true
-          })
+              meta = %{finish_reason: normalized_reason}
+              meta = if normalized_reason, do: Map.put(meta, :terminal?, true), else: meta
 
-        chunks ++ [meta_chunk]
+              content_chunks ++ [ReqLLM.StreamChunk.meta(meta)]
+            else
+              content_chunks
+            end
+          end)
 
-      %{"choices" => [%{"delta" => delta, "finish_reason" => finish_reason} | _]}
-      when finish_reason != nil ->
-        # Final chunk with finish reason (no usage)
-        chunks = decode_openai_delta(delta)
-        normalized_reason = parse_openai_finish_reason(finish_reason)
-        meta_chunk = ReqLLM.StreamChunk.meta(%{finish_reason: normalized_reason, terminal?: true})
-        chunks ++ [meta_chunk]
+        _ ->
+          []
+      end
 
-      %{"choices" => [%{"delta" => delta} | _]} ->
-        decode_openai_delta(delta)
+    # 2. Handle usage
+    usage_chunks =
+      case Map.get(data, "usage") do
+        usage when is_map(usage) ->
+          # Check if this is a final usage chunk (empty choices) to mark terminal
+          is_final = match?(%{"choices" => []}, data)
+          normalized_usage = parse_openai_usage(usage)
+          meta = %{usage: normalized_usage, model: model.id}
+          meta = if is_final, do: Map.put(meta, :terminal?, true), else: meta
 
-      _ ->
-        []
-    end
+          [ReqLLM.StreamChunk.meta(meta)]
+
+        _ ->
+          []
+      end
+
+    choices_chunks ++ usage_chunks
   end
 
   # Handle terminal [DONE] event

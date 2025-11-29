@@ -117,7 +117,7 @@ defmodule ReqLLM.MixProject do
           ],
           Core: [
             ReqLLM,
-            ReqLLM.Model,
+            ReqLLM.ModelHelpers,
             ReqLLM.Model.Metadata,
             ReqLLM.Metadata,
             ReqLLM.Capability,
@@ -190,7 +190,7 @@ defmodule ReqLLM.MixProject do
       links: %{
         "Changelog" => "https://hexdocs.pm/req_llm/changelog.html",
         "GitHub" => @source_url,
-        "Agent Jido" => "https://agentjido.xyz"
+        "Elixir AI Discord" => "https://agentjido.xyz/discord"
       },
       files:
         ~w(lib priv mix.exs LICENSE README.md CHANGELOG.md CONTRIBUTING.md AGENTS.md usage-rules.md guides .formatter.exs)
