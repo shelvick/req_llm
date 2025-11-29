@@ -688,20 +688,16 @@ defmodule ReqLLM.Providers.XAI do
   end
 
   defp extract_from_content(response) do
-    case response.message do
-      %ReqLLM.Message{content: content_parts} when is_list(content_parts) ->
-        content_parts
-        |> Enum.find_value(fn
-          %ReqLLM.Message.ContentPart{type: :text, text: text} when is_binary(text) ->
-            parse_json_defensively(text)
+    %ReqLLM.Message{content: content_parts} = response.message
 
-          _ ->
-            nil
-        end)
+    content_parts
+    |> Enum.find_value(fn
+      %ReqLLM.Message.ContentPart{type: :text, text: text} when is_binary(text) ->
+        parse_json_defensively(text)
 
       _ ->
         nil
-    end
+    end)
   end
 
   @dialyzer {:nowarn_function, parse_json_defensively: 1}

@@ -187,14 +187,7 @@ defmodule ReqLLM.Providers.Zai do
     case req.options[:context] do
       %ReqLLM.Context{messages: existing_messages} = ctx when is_list(existing_messages) ->
         new_message = response.message
-
-        updated_context =
-          if new_message do
-            %{ctx | messages: existing_messages ++ [new_message]}
-          else
-            ctx
-          end
-
+        updated_context = %{ctx | messages: existing_messages ++ [new_message]}
         %{response | context: updated_context}
 
       _ ->
@@ -222,28 +215,24 @@ defmodule ReqLLM.Providers.Zai do
   end
 
   defp extract_from_json_schema_content(response) do
-    case response.message do
-      %ReqLLM.Message{content: content_parts} when is_list(content_parts) ->
-        text_content =
-          content_parts
-          |> Enum.find_value(fn
-            %ReqLLM.Message.ContentPart{type: :text, text: text} when is_binary(text) -> text
-            _ -> nil
-          end)
+    %ReqLLM.Message{content: content_parts} = response.message
 
-        case text_content do
-          nil ->
-            nil
+    text_content =
+      content_parts
+      |> Enum.find_value(fn
+        %ReqLLM.Message.ContentPart{type: :text, text: text} when is_binary(text) -> text
+        _ -> nil
+      end)
 
-          json_string ->
-            case Jason.decode(json_string) do
-              {:ok, parsed_object} -> parsed_object
-              {:error, _} -> nil
-            end
-        end
-
-      _ ->
+    case text_content do
+      nil ->
         nil
+
+      json_string ->
+        case Jason.decode(json_string) do
+          {:ok, parsed_object} -> parsed_object
+          {:error, _} -> nil
+        end
     end
   end
 
