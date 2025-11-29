@@ -581,19 +581,19 @@ defmodule ReqLLM.Providers.OpenAITest do
       assert warnings == []
     end
 
-    test "translate_options for o1 models renames max_tokens and drops temperature" do
+    test "translate_options for o1 models renames max_tokens and drops sampling params" do
       {:ok, model} = ReqLLM.model("openai:o1-mini")
 
       opts = [max_tokens: 1000, temperature: 0.7, top_p: 0.9]
       {translated_opts, warnings} = OpenAI.translate_options(:chat, model, opts)
 
       assert translated_opts[:max_completion_tokens] == 1000
-      assert translated_opts[:top_p] == 0.9
       refute Keyword.has_key?(translated_opts, :max_tokens)
       refute Keyword.has_key?(translated_opts, :temperature)
-      assert length(warnings) == 2
+      refute Keyword.has_key?(translated_opts, :top_p)
+      assert length(warnings) == 3
       assert Enum.any?(warnings, &(&1 =~ "max_tokens"))
-      assert Enum.any?(warnings, &(&1 =~ ":temperature"))
+      assert Enum.any?(warnings, &(&1 =~ "sampling parameters"))
     end
 
     test "translate_options for o3 models renames max_tokens and drops temperature" do

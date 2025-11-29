@@ -6,6 +6,8 @@ defmodule ReqLLM.Providers.OpenAI.ParamProfiles do
   Rules are resolved from model metadata first, then inferred from capabilities.
   """
 
+  alias ReqLLM.Providers.OpenAI.AdapterHelpers
+
   @type profile_name :: atom
 
   @profiles %{
@@ -67,37 +69,31 @@ defmodule ReqLLM.Providers.OpenAI.ParamProfiles do
   defp profiles_for(_op, _model), do: []
 
   defp reasoning_model?(%LLMDB.Model{capabilities: caps, id: model_name}) when is_map(caps) do
-    Map.get(caps, :reasoning) == true || Map.get(caps, "reasoning") == true ||
-      o_series_model?(model_name) || gpt5_model?(model_name) ||
-      reasoning_codex_model?(model_name)
+    has_reasoning_capability?(caps) || AdapterHelpers.reasoning_model?(model_name)
   end
 
   defp reasoning_model?(%LLMDB.Model{id: model_name}) do
-    o_series_model?(model_name) || gpt5_model?(model_name) ||
-      reasoning_codex_model?(model_name)
+    AdapterHelpers.reasoning_model?(model_name)
   end
 
-  defp no_sampling_params?(%LLMDB.Model{id: model_name}), do: gpt5_model?(model_name)
+  defp has_reasoning_capability?(caps) do
+    case caps[:reasoning] || caps["reasoning"] do
+      true -> true
+      %{enabled: true} -> true
+      %{"enabled" => true} -> true
+      _ -> false
+    end
+  end
+
+  defp no_sampling_params?(%LLMDB.Model{id: model_name}) do
+    AdapterHelpers.gpt5_model?(model_name) || AdapterHelpers.o_series_model?(model_name)
+  end
 
   defp temperature_unsupported?(%LLMDB.Model{id: model_name}) do
-    o_series_model?(model_name)
+    AdapterHelpers.o_series_model?(model_name)
   end
 
   defp temperature_fixed_one?(%LLMDB.Model{id: _model_name}), do: false
-
-  defp o_series_model?(<<"o1", _::binary>>), do: true
-  defp o_series_model?(<<"o3", _::binary>>), do: true
-  defp o_series_model?(<<"o4", _::binary>>), do: true
-  defp o_series_model?(_), do: false
-
-  defp gpt5_model?("gpt-5-chat-latest"), do: false
-  defp gpt5_model?(<<"gpt-5", _::binary>>), do: true
-  defp gpt5_model?(_), do: false
-
-  defp reasoning_codex_model?(<<"codex", rest::binary>>),
-    do: String.contains?(rest, "mini-latest")
-
-  defp reasoning_codex_model?(_), do: false
 
   defp add_if(list, true, item), do: [item | list]
   defp add_if(list, false, _item), do: list
