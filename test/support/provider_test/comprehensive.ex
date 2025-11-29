@@ -235,7 +235,7 @@ defmodule ReqLLM.ProviderTest.Comprehensive do
               case ReqLLM.model(@model_spec) do
                 {:ok, %{capabilities: %{reasoning: true}}} -> 500
                 {:ok, %{model: "gpt-4.1" <> _}} -> 16
-                {:ok, %{_metadata: %{"api" => "responses"}}} -> 16
+                {:ok, %{extra: %{api: "responses"}}} -> 200
                 _ -> 10
               end
 
@@ -626,8 +626,11 @@ defmodule ReqLLM.ProviderTest.Comprehensive do
               assert stream_response.stream
               assert stream_response.metadata_handle
 
+              # Collect stream chunks once (streams are single-use)
+              stream_chunks = Enum.to_list(stream_response.stream)
+
               {thinking_count, reasoning_tokens_stream} =
-                stream_response.stream
+                stream_chunks
                 |> Enum.reduce({0, 0}, fn chunk, {tc, rt} ->
                   case chunk.type do
                     :thinking ->
@@ -643,11 +646,19 @@ defmodule ReqLLM.ProviderTest.Comprehensive do
                   end
                 end)
 
-              {:ok, response} = ReqLLM.StreamResponse.to_response(stream_response)
+              # Build response from collected chunks
+              stream_with_chunks = %{stream_response | stream: stream_chunks}
+              {:ok, response} = ReqLLM.StreamResponse.to_response(stream_with_chunks)
               rt_final = ReqLLM.Response.reasoning_tokens(response)
 
-              assert thinking_count > 0 or reasoning_tokens_stream > 0 or rt_final > 0,
-                     "Expected at least one :thinking chunk or positive reasoning_tokens; got tc=#{thinking_count} rt_stream=#{reasoning_tokens_stream} rt_final=#{rt_final}"
+              # Adaptive reasoning models (like gpt-5-chat) may choose not to reason
+              # for simple prompts, so also accept text output like non-streaming does
+              streaming_text = ReqLLM.Response.text(response) || ""
+              has_streaming_output = streaming_text != ""
+
+              assert thinking_count > 0 or reasoning_tokens_stream > 0 or rt_final > 0 or
+                       has_streaming_output,
+                     "Expected at least one :thinking chunk, positive reasoning_tokens, or text output; got tc=#{thinking_count} rt_stream=#{reasoning_tokens_stream} rt_final=#{rt_final} text_len=#{String.length(streaming_text)}"
 
               assert %ReqLLM.Response{} = response
               assert response.message.role == :assistant

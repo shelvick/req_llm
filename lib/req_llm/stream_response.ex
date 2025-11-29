@@ -69,7 +69,10 @@ defmodule ReqLLM.StreamResponse do
 
   use TypedStruct
 
-  alias ReqLLM.{Context, Response, StreamResponse.MetadataHandle}
+  alias ReqLLM.Context
+  alias ReqLLM.Providers.Anthropic.AdapterHelpers
+  alias ReqLLM.Response
+  alias ReqLLM.StreamResponse.MetadataHandle
 
   typedstruct enforce: true do
     @typedoc """
@@ -651,6 +654,9 @@ defmodule ReqLLM.StreamResponse do
             finish_reason: Map.get(metadata, :finish_reason, response.finish_reason)
         }
 
+        # Extract object from structured_output tool call if present
+        response = AdapterHelpers.extract_and_set_object(response)
+
         {:ok, Context.merge_response(stream_response.context, response)}
 
       {_req, error} when is_exception(error) ->
@@ -764,13 +770,22 @@ defmodule ReqLLM.StreamResponse do
   end
 
   defp extract_from_tool_calls(tool_calls) when is_list(tool_calls) do
-    case Enum.find(tool_calls, fn tc -> tc.name == "structured_output" end) do
-      %{arguments: args} when is_map(args) -> args
-      _ -> nil
-    end
+    Enum.find_value(tool_calls, &extract_structured_output_args/1)
   end
 
   defp extract_from_tool_calls(_), do: nil
+
+  defp extract_structured_output_args(%ReqLLM.ToolCall{} = tc) do
+    if ReqLLM.ToolCall.matches_name?(tc, "structured_output") do
+      ReqLLM.ToolCall.args_map(tc)
+    end
+  end
+
+  defp extract_structured_output_args(%{name: "structured_output", arguments: args})
+       when is_map(args),
+       do: args
+
+  defp extract_structured_output_args(_), do: nil
 
   defp extract_from_content(content) do
     case Enum.find(content, fn part -> is_map(part) and part[:type] == :object end) do
