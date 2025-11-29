@@ -331,6 +331,142 @@
     "status": "pass",
     "last_checked": "2025-11-14T20:51:21Z"
   },
+  "azure:claude-haiku-4-5": {
+    "status": "pass",
+    "last_checked": "2025-11-28T23:41:19Z"
+  },
+  "azure:claude-opus-4-1": {
+    "status": "pass",
+    "last_checked": "2025-11-28T23:41:19Z"
+  },
+  "azure:claude-opus-4-5": {
+    "status": "pass",
+    "last_checked": "2025-11-28T23:41:19Z"
+  },
+  "azure:claude-sonnet-4-5": {
+    "status": "pass",
+    "last_checked": "2025-11-28T23:41:19Z"
+  },
+  "azure:codex-mini": {
+    "status": "pass",
+    "last_checked": "2025-11-29T00:10:11Z"
+  },
+  "azure:gpt-3.5-turbo-0125": {
+    "status": "fail",
+    "last_checked": "2025-11-27T07:56:33Z"
+  },
+  "azure:gpt-3.5-turbo-0301": {
+    "status": "fail",
+    "last_checked": "2025-11-27T07:56:33Z"
+  },
+  "azure:gpt-3.5-turbo-0613": {
+    "status": "fail",
+    "last_checked": "2025-11-27T07:56:33Z"
+  },
+  "azure:gpt-3.5-turbo-1106": {
+    "status": "fail",
+    "last_checked": "2025-11-27T07:56:33Z"
+  },
+  "azure:gpt-3.5-turbo-instruct": {
+    "status": "fail",
+    "last_checked": "2025-11-27T07:56:33Z"
+  },
+  "azure:gpt-4": {
+    "status": "fail",
+    "last_checked": "2025-11-27T07:56:33Z"
+  },
+  "azure:gpt-4-32k": {
+    "status": "fail",
+    "last_checked": "2025-11-27T07:56:33Z"
+  },
+  "azure:gpt-4-turbo": {
+    "status": "fail",
+    "last_checked": "2025-11-27T07:56:33Z"
+  },
+  "azure:gpt-4-turbo-vision": {
+    "status": "fail",
+    "last_checked": "2025-11-27T07:56:33Z"
+  },
+  "azure:gpt-4.1": {
+    "status": "pass",
+    "last_checked": "2025-11-28T23:42:44Z"
+  },
+  "azure:gpt-4.1-mini": {
+    "status": "pass",
+    "last_checked": "2025-11-28T23:42:44Z"
+  },
+  "azure:gpt-4.1-nano": {
+    "status": "pass",
+    "last_checked": "2025-11-28T23:42:44Z"
+  },
+  "azure:gpt-4o": {
+    "status": "pass",
+    "last_checked": "2025-11-28T23:42:53Z"
+  },
+  "azure:gpt-4o-mini": {
+    "status": "pass",
+    "last_checked": "2025-11-28T23:42:53Z"
+  },
+  "azure:gpt-5": {
+    "status": "fail",
+    "last_checked": "2025-11-27T09:23:31Z"
+  },
+  "azure:gpt-5-chat": {
+    "status": "pass",
+    "last_checked": "2025-11-28T23:43:21Z"
+  },
+  "azure:gpt-5-codex": {
+    "status": "fail",
+    "last_checked": "2025-11-27T09:23:31Z"
+  },
+  "azure:gpt-5-mini": {
+    "status": "pass",
+    "last_checked": "2025-11-28T23:44:12Z"
+  },
+  "azure:gpt-5-nano": {
+    "status": "pass",
+    "last_checked": "2025-11-28T23:44:55Z"
+  },
+  "azure:gpt-5.1": {
+    "status": "fail",
+    "last_checked": "2025-11-27T09:23:31Z"
+  },
+  "azure:gpt-5.1-chat": {
+    "status": "pass",
+    "last_checked": "2025-11-28T23:45:19Z"
+  },
+  "azure:gpt-5.1-codex": {
+    "status": "fail",
+    "last_checked": "2025-11-27T09:23:31Z"
+  },
+  "azure:gpt-5.1-codex-mini": {
+    "status": "pass",
+    "last_checked": "2025-11-29T00:11:05Z"
+  },
+  "azure:o1": {
+    "status": "pass",
+    "last_checked": "2025-11-28T23:47:09Z"
+  },
+  "azure:o1-mini": {
+    "status": "fail",
+    "last_checked": "2025-11-27T07:56:33Z"
+  },
+  "azure:o1-preview": {
+    "status": "fail",
+    "last_checked": "2025-11-27T07:56:33Z"
+  },
+  "azure:o3": {
+    "status": "fail",
+    "last_checked": "2025-11-27T07:56:33Z"
+  },
+  "azure:o3-mini": {
+    "status": "pass",
+    "last_checked": "2025-11-28T23:47:53Z"
+  },
+  "azure:o4-mini": {
+    "status": "pass",
+    "last_checked": "2025-11-28T23:48:50Z"
+  },
   "cerebras:gpt-oss-120b": {
     "status": "pass",
     "last_checked": "2025-11-14T20:51:00Z"
