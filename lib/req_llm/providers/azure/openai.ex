@@ -44,8 +44,6 @@ defmodule ReqLLM.Providers.Azure.OpenAI do
   require Logger
   require ReqLLM.Debug, as: Debug
 
-  # Model prefixes that use OpenAI-compatible API format
-  @openai_compatible_prefixes ["gpt", "o1", "o3", "o4", "text-embedding", "deepseek", "mai-ds"]
 
   @doc """
   Formats a ReqLLM context into OpenAI Chat Completions request format.
@@ -107,10 +105,12 @@ defmodule ReqLLM.Providers.Azure.OpenAI do
   end
 
   defp warn_if_non_openai_model(model_id) do
-    if !Enum.any?(@openai_compatible_prefixes, &String.starts_with?(model_id, &1)) do
+    prefixes = ReqLLM.Providers.Azure.openai_compatible_families()
+
+    if !Enum.any?(prefixes, &String.starts_with?(model_id, &1)) do
       Logger.warning(
         "Model '#{model_id}' does not appear to be OpenAI-compatible. " <>
-          "Expected prefix: #{Enum.join(@openai_compatible_prefixes, ", ")}. " <>
+          "Expected prefix: #{Enum.join(prefixes, ", ")}. " <>
           "Proceeding with OpenAI formatting (may fail)."
       )
     end

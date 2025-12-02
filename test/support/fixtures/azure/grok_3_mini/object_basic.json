@@ -1,0 +1,186 @@
+{
+  "model_spec": "azure:grok-3-mini",
+  "provider": "azure",
+  "request": {
+    "body": {
+      "b64": "eyJtYXhfdG9rZW5zIjo1MDAsIm1lc3NhZ2VzIjpbeyJjb250ZW50IjoiR2VuZXJhdGUgYSBmaWN0aW9uYWwgc29mdHdhcmUgZW5naW5lZXIgcHJvZmlsZSB3aXRoIGEgbWFkZS11cCBuYW1lIGFuZCBhZ2UiLCJyb2xlIjoidXNlciJ9XSwibiI6MSwic2VlZCI6NDIsInN0cmVhbSI6ZmFsc2UsInRlbXBlcmF0dXJlIjowLjAsInRvb2xfY2hvaWNlIjoicmVxdWlyZWQiLCJ0b29scyI6W3siZnVuY3Rpb24iOnsiZGVzY3JpcHRpb24iOiJHZW5lcmF0ZSBzdHJ1Y3R1cmVkIG91dHB1dCBtYXRjaGluZyB0aGUgcHJvdmlkZWQgc2NoZW1hIiwibmFtZSI6InN0cnVjdHVyZWRfb3V0cHV0IiwicGFyYW1ldGVycyI6eyJhZGRpdGlvbmFsUHJvcGVydGllcyI6ZmFsc2UsInByb3BlcnRpZXMiOnsiYWdlIjp7ImRlc2NyaXB0aW9uIjoiUGVyc29uJ3MgYWdlIGluIHllYXJzIiwibWluaW11bSI6MSwidHlwZSI6ImludGVnZXIifSwibmFtZSI6eyJkZXNjcmlwdGlvbiI6IlBlcnNvbidzIGZ1bGwgbmFtZSIsInR5cGUiOiJzdHJpbmcifSwib2NjdXBhdGlvbiI6eyJkZXNjcmlwdGlvbiI6IlBlcnNvbidzIGpvYiBvciBwcm9mZXNzaW9uIiwidHlwZSI6InN0cmluZyJ9fSwicmVxdWlyZWQiOlsibmFtZSIsImFnZSJdLCJ0eXBlIjoib2JqZWN0In19LCJ0eXBlIjoiZnVuY3Rpb24ifV19"
+    },
+    "canonical_json": {
+      "max_tokens": 500,
+      "messages": [
+        {
+          "content": "Generate a fictional software engineer profile with a made-up name and age",
+          "role": "user"
+        }
+      ],
+      "n": 1,
+      "seed": 42,
+      "stream": false,
+      "temperature": 0.0,
+      "tool_choice": "required",
+      "tools": [
+        {
+          "function": {
+            "description": "Generate structured output matching the provided schema",
+            "name": "structured_output",
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "age": {
+                  "description": "Person's age in years",
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "name": {
+                  "description": "Person's full name",
+                  "type": "string"
+                },
+                "occupation": {
+                  "description": "Person's job or profession",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "age"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "headers": {
+      "accept": [
+        "application/json"
+      ],
+      "accept-encoding": [
+        "gzip"
+      ],
+      "api-key": "[REDACTED:api-key]",
+      "content-type": [
+        "application/json"
+      ],
+      "user-agent": [
+        "req/0.5.16"
+      ]
+    },
+    "method": "post",
+    "url": "https://shelvick-test.cognitiveservices.azure.com/openai/deployments/grok-3-mini/chat/completions?api-version=2025-04-01-preview"
+  },
+  "response": {
+    "body": {
+      "choices": [
+        {
+          "content_filter_results": {},
+          "finish_reason": "length",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "content": "",
+            "reasoning_content": "First, the user asked to generate a fictional software engineer profile with a made-up name and age. The available actions include a function called \"structured_output\", which is designed to generate structured output matching a provided schema.\n\nThe schema for \"structured_output\" requires an object with properties: \"name\", \"age\", and \"occupation\". All are required, with \"name\" as a string, \"age\" as an integer minimum 1, and \"occupation\" as a string.\n\nThe user's request specifies a software engineer profile, so I need to include \"occupation\" as \"software engineer\" or something similar. Even though the user didn't explicitly mention occupation, the schema requires it, so I must include it in the function call.\n\nMy response must include a function call in the specified JSON format within <function_call> tags. I should not make my response verbose, so I'll keep it clear and concise.\n\nSteps to take:\n\n1. Since the user wants a fictional profile, I can use the \"structured_output\" function to generate this directly.\n\n2. I need to provide the schema in the function call. Looking at the available actions, the \"structured_output\" function's parameters include the schema definition. In the example, the action_input should match the parameters, which is an object with the schema.\n\nThe description says: \"Generate structured output matching the provided schema\". And the parameters are defined with properties for name, age, and occupation.\n\nIn the function call, I need to specify the action and action_input. The action_input should be the data that matches the schema, not the schema itself. Let me read the available actions again.\n\nAvailable functions:\n\n{\"name\":\"structured_output\",\"description\":\"Generate structured output matching the provided schema\",\"parameters\":{\"additionalProperties\":false,\"properties\":{\"age\":{\"description\":\"Person's age in years\",\"minimum\":1,\"type\":\"integer\"},\"name\":{\"description\":\"Person's full name\",\"type\":\"string\"},\"occupation\":{\"description\":\"Person's job or profession\",\"type\":\"string\"}},\"required\":[\"name\",\"age\"],\"type\":\"object\"}}\n\nThis seems confusing. The \"parameters\" for the \"structured_output\" action are themselves a schema. But the description says \"Generate structured output matching the provided schema\". In this case, when I call \"structured_output\", I need to provide an action_input that conforms to this schema.\n\nRe-reading it: the \"parameters\" define what the input to the \"structured_output\" function should be. So, when I call it, I",
+            "refusal": null,
+            "role": "assistant",
+            "tool_calls": null
+          },
+          "stop_reason": null
+        }
+      ],
+      "created": 1764647840,
+      "id": "d9eb3a50-a6ad-401b-863f-9b5a1160d944_sidecar",
+      "model": "grok-3-mini-high",
+      "object": "chat.completion",
+      "prompt_filter_results": [
+        {
+          "content_filter_results": {
+            "hate": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "self_harm": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "sexual": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "violence": {
+              "filtered": false,
+              "severity": "safe"
+            }
+          },
+          "prompt_index": 0
+        }
+      ],
+      "usage": {
+        "audio_prompt_tokens": 0,
+        "completion_tokens": 0,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": 0,
+          "audio_tokens": 0,
+          "reasoning_tokens": 500,
+          "rejected_prediction_tokens": 0
+        },
+        "num_sources_used": 0,
+        "prompt_tokens": 213,
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": 0,
+          "text_tokens": 213
+        },
+        "total_tokens": 713
+      }
+    },
+    "headers": {
+      "apim-request-id": [
+        "4bee1a66-a9cc-4013-8213-7fe1e031fc76"
+      ],
+      "content-type": [
+        "application/json"
+      ],
+      "date": [
+        "Tue, 02 Dec 2025 03:57:24 GMT"
+      ],
+      "prompt_token_len": [
+        "213"
+      ],
+      "request-context": [
+        "appId="
+      ],
+      "sampling_token_len": [
+        "0"
+      ],
+      "strict-transport-security": [
+        "max-age=31536000; includeSubDomains; preload"
+      ],
+      "transfer-encoding": [
+        "chunked"
+      ],
+      "vary": [
+        "Accept-Encoding"
+      ],
+      "x-content-type-options": [
+        "nosniff"
+      ],
+      "x-ms-region": [
+        "East US 2"
+      ],
+      "x-ratelimit-limit-requests": [
+        "5000"
+      ],
+      "x-ratelimit-limit-tokens": [
+        "5000000"
+      ],
+      "x-ratelimit-remaining-requests": [
+        "4993"
+      ],
+      "x-ratelimit-remaining-tokens": [
+        "4996024"
+      ]
+    },
+    "status": 200
+  }
+}

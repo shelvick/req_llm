@@ -1,0 +1,189 @@
+{
+  "model_spec": "azure:grok-3",
+  "provider": "azure",
+  "request": {
+    "body": {
+      "b64": "eyJtYXhfdG9rZW5zIjo4MTksIm1lc3NhZ2VzIjpbeyJjb250ZW50IjoiVXNlIHRoZSBhZGQgdG9vbCB0byBjb21wdXRlIDIgKyAzLiBBZnRlciB0aGUgdG9vbCByZXN1bHQgYXJyaXZlcywgcmVzcG9uZCB3aXRoICdzdW09PHZhbHVlPicuIiwicm9sZSI6InVzZXIifSx7ImNvbnRlbnQiOltdLCJyb2xlIjoiYXNzaXN0YW50IiwidG9vbF9jYWxscyI6W3siZnVuY3Rpb24iOnsiYXJndW1lbnRzIjoie1wiYVwiOjIsXCJiXCI6M30iLCJuYW1lIjoiYWRkIn0sImlkIjoiY2FsbF82OTM3Njk2NyIsInR5cGUiOiJmdW5jdGlvbiJ9XX0seyJjb250ZW50IjoiNSIsIm5hbWUiOiJhZGQiLCJyb2xlIjoidG9vbCIsInRvb2xfY2FsbF9pZCI6ImNhbGxfNjkzNzY5NjcifV0sIm4iOjEsInNlZWQiOjQyLCJzdHJlYW0iOmZhbHNlLCJ0ZW1wZXJhdHVyZSI6MC4wfQ=="
+    },
+    "canonical_json": {
+      "max_tokens": 819,
+      "messages": [
+        {
+          "content": "Use the add tool to compute 2 + 3. After the tool result arrives, respond with 'sum=<value>'.",
+          "role": "user"
+        },
+        {
+          "content": [],
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"a\":2,\"b\":3}",
+                "name": "add"
+              },
+              "id": "call_69376967",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "5",
+          "name": "add",
+          "role": "tool",
+          "tool_call_id": "call_69376967"
+        }
+      ],
+      "n": 1,
+      "seed": 42,
+      "stream": false,
+      "temperature": 0.0
+    },
+    "headers": {
+      "accept": [
+        "application/json"
+      ],
+      "accept-encoding": [
+        "gzip"
+      ],
+      "api-key": "[REDACTED:api-key]",
+      "content-type": [
+        "application/json"
+      ],
+      "user-agent": [
+        "req/0.5.16"
+      ]
+    },
+    "method": "post",
+    "url": "https://shelvick-test.cognitiveservices.azure.com/openai/deployments/grok-3/chat/completions?api-version=2025-04-01-preview"
+  },
+  "response": {
+    "body": {
+      "choices": [
+        {
+          "content_filter_results": {
+            "hate": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "self_harm": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "sexual": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "violence": {
+              "filtered": false,
+              "severity": "safe"
+            }
+          },
+          "finish_reason": "stop",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "content": "sum=5",
+            "refusal": null,
+            "role": "assistant",
+            "tool_calls": null
+          },
+          "stop_reason": null
+        }
+      ],
+      "created": 1764647839,
+      "id": "40ef86cb-1834-4204-a7a1-376cc2c3429b_sidecar",
+      "model": "grok-3",
+      "object": "chat.completion",
+      "prompt_filter_results": [
+        {
+          "content_filter_results": {
+            "hate": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "self_harm": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "sexual": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "violence": {
+              "filtered": false,
+              "severity": "safe"
+            }
+          },
+          "prompt_index": 0
+        }
+      ],
+      "usage": {
+        "audio_prompt_tokens": 0,
+        "completion_tokens": 3,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": 0,
+          "audio_tokens": 0,
+          "reasoning_tokens": 0,
+          "rejected_prediction_tokens": 0
+        },
+        "num_sources_used": 0,
+        "prompt_tokens": 79,
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": 0,
+          "text_tokens": 79
+        },
+        "total_tokens": 82
+      }
+    },
+    "headers": {
+      "apim-request-id": [
+        "63c8bf6c-a24f-4f11-b7aa-b31e379b646c"
+      ],
+      "content-type": [
+        "application/json"
+      ],
+      "date": [
+        "Tue, 02 Dec 2025 03:57:20 GMT"
+      ],
+      "prompt_token_len": [
+        "79"
+      ],
+      "request-context": [
+        "appId="
+      ],
+      "sampling_token_len": [
+        "3"
+      ],
+      "strict-transport-security": [
+        "max-age=31536000; includeSubDomains; preload"
+      ],
+      "transfer-encoding": [
+        "chunked"
+      ],
+      "vary": [
+        "Accept-Encoding"
+      ],
+      "x-content-type-options": [
+        "nosniff"
+      ],
+      "x-ms-region": [
+        "East US 2"
+      ],
+      "x-ratelimit-limit-requests": [
+        "4600"
+      ],
+      "x-ratelimit-limit-tokens": [
+        "4600000"
+      ],
+      "x-ratelimit-remaining-requests": [
+        "4590"
+      ],
+      "x-ratelimit-remaining-tokens": [
+        "4593926"
+      ]
+    },
+    "status": 200
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "model_spec": "azure:grok-3-mini",
+  "provider": "azure",
+  "request": {
+    "body": {
+      "b64": "eyJtYXhfdG9rZW5zIjoxMDI0LCJtZXNzYWdlcyI6W3siY29udGVudCI6IlJlc3BvbmQgd2l0aCBhIHNpbmdsZSB3b3JkICdIaScuIiwicm9sZSI6InVzZXIifSx7ImNvbnRlbnQiOiJIaSIsInJvbGUiOiJhc3Npc3RhbnQifSx7ImNvbnRlbnQiOiJIaSBhZ2FpbiIsInJvbGUiOiJ1c2VyIn1dLCJuIjoxLCJzZWVkIjo0Miwic3RyZWFtIjpmYWxzZSwidGVtcGVyYXR1cmUiOjAuMH0="
+    },
+    "canonical_json": {
+      "max_tokens": 1024,
+      "messages": [
+        {
+          "content": "Respond with a single word 'Hi'.",
+          "role": "user"
+        },
+        {
+          "content": "Hi",
+          "role": "assistant"
+        },
+        {
+          "content": "Hi again",
+          "role": "user"
+        }
+      ],
+      "n": 1,
+      "seed": 42,
+      "stream": false,
+      "temperature": 0.0
+    },
+    "headers": {
+      "accept": [
+        "application/json"
+      ],
+      "accept-encoding": [
+        "gzip"
+      ],
+      "api-key": "[REDACTED:api-key]",
+      "content-type": [
+        "application/json"
+      ],
+      "user-agent": [
+        "req/0.5.16"
+      ]
+    },
+    "method": "post",
+    "url": "https://shelvick-test.cognitiveservices.azure.com/openai/deployments/grok-3-mini/chat/completions?api-version=2025-04-01-preview"
+  },
+  "response": {
+    "body": {
+      "choices": [
+        {
+          "content_filter_results": {
+            "hate": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "self_harm": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "sexual": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "violence": {
+              "filtered": false,
+              "severity": "safe"
+            }
+          },
+          "finish_reason": "stop",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "content": "Hi",
+            "reasoning_content": "First, the user said: \"Respond with a single word 'Hi'.\" And I responded with \"Hi\" as instructed.\n\nNow, the user is saying: \"Hi again.\" This is a new message, and it's not explicitly instructing me to do anything specific like the first message.\n\nMy system prompt says: \"You are Grok, a helpful and maximally truthful AI built by xAI, not based on any other companies and their models.\" It doesn't specify any particular behavior beyond being helpful and truthful.\n\nIn the conversation history, the first user message was a direct instruction to respond with a single word 'Hi', which I did. Now, this is a new interaction.\n\nThe user is greeting me again with \"Hi again.\" As a helpful AI, I should respond appropriately to maintain a conversation.\n\nHowever, the initial instruction was specific to the first message. For this new message, I don't have a predefined response command.\n\nTo be helpful and engaging, I could respond with a greeting. But I need to ensure I'm truthful and not fabricating anything.\n\nPossible responses:\n\n- I could say \"Hi\" again, to keep it simple and consistent.\n\n- Or, I could say something like \"Hello\" or \"How can I help you?\" to be more interactive.\n\nBut the user might be testing if I'm sticking to the initial instruction or if I'm adaptive.\n\nRe-reading the system prompt, it says: \"You are to chat normally with the user, not verbose.\" So, I should chat normally, but not be verbose, meaning keep responses concise.\n\nA normal chat response to \"Hi again\" would be something like \"Hi\" or \"Hello again.\"\n\nSince the first response was strictly to the instruction, for this new message, I should respond as a helpful AI.\n\nThe user might be expecting me to continue with the single word 'Hi' based on the initial context, but that seems unlikely as conversations evolve.\n\nTo be maximally truthful, I should not assume anything beyond what's said.\n\nThe safest and most helpful response is to acknowledge the greeting.\n\nSo, I'll respond with \"Hi\" again, keeping it concise.\n\nI could say \"Hello\" to vary it, but \"Hi\" is fine.\n\nFinal decision: Respond with \"Hi\" to match the initial interaction and keep it simple.",
+            "refusal": null,
+            "role": "assistant",
+            "tool_calls": null
+          },
+          "stop_reason": null
+        }
+      ],
+      "created": 1764647846,
+      "id": "dae53714-8177-4c4a-bd14-936ce57167ad_sidecar",
+      "model": "grok-3-mini-high",
+      "object": "chat.completion",
+      "prompt_filter_results": [
+        {
+          "content_filter_results": {
+            "hate": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "self_harm": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "sexual": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "violence": {
+              "filtered": false,
+              "severity": "safe"
+            }
+          },
+          "prompt_index": 0
+        }
+      ],
+      "usage": {
+        "audio_prompt_tokens": 0,
+        "completion_tokens": 1,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": 0,
+          "audio_tokens": 0,
+          "reasoning_tokens": 459,
+          "rejected_prediction_tokens": 0
+        },
+        "num_sources_used": 0,
+        "prompt_tokens": 26,
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": 0,
+          "text_tokens": 26
+        },
+        "total_tokens": 486
+      }
+    },
+    "headers": {
+      "apim-request-id": [
+        "78e3fe90-b749-487c-8032-279929f54fdb"
+      ],
+      "content-type": [
+        "application/json"
+      ],
+      "date": [
+        "Tue, 02 Dec 2025 03:57:32 GMT"
+      ],
+      "prompt_token_len": [
+        "26"
+      ],
+      "request-context": [
+        "appId="
+      ],
+      "sampling_token_len": [
+        "1"
+      ],
+      "strict-transport-security": [
+        "max-age=31536000; includeSubDomains; preload"
+      ],
+      "transfer-encoding": [
+        "chunked"
+      ],
+      "vary": [
+        "Accept-Encoding"
+      ],
+      "x-content-type-options": [
+        "nosniff"
+      ],
+      "x-ms-region": [
+        "East US 2"
+      ],
+      "x-ratelimit-limit-requests": [
+        "5000"
+      ],
+      "x-ratelimit-limit-tokens": [
+        "5000000"
+      ],
+      "x-ratelimit-remaining-requests": [
+        "4991"
+      ],
+      "x-ratelimit-remaining-tokens": [
+        "4993976"
+      ]
+    },
+    "status": 200
+  }
+}

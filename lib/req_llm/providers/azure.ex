@@ -215,10 +215,18 @@ defmodule ReqLLM.Providers.Azure do
     "o4" => __MODULE__.OpenAI,
     "deepseek" => __MODULE__.OpenAI,
     "mai-ds" => __MODULE__.OpenAI,
-    "claude" => __MODULE__.Anthropic
+    "claude" => __MODULE__.Anthropic,
+    "grok" => __MODULE__.OpenAI
   }
 
   @model_family_prefixes @model_families |> Map.keys() |> Enum.sort_by(&String.length/1, :desc)
+
+  @openai_compatible_families @model_families
+                              |> Enum.filter(fn {_prefix, module} -> module == __MODULE__.OpenAI end)
+                              |> Enum.map(fn {prefix, _} -> prefix end)
+
+  @doc false
+  def openai_compatible_families, do: @openai_compatible_families
 
   @service_tier_families ["gpt", "text-embedding", "o1", "o3", "o4"]
 
@@ -233,7 +241,8 @@ defmodule ReqLLM.Providers.Azure do
     "o3" => "AZURE_OPENAI_BASE_URL",
     "o4" => "AZURE_OPENAI_BASE_URL",
     "deepseek" => "AZURE_DEEPSEEK_BASE_URL",
-    "mai-ds" => "AZURE_MAI_BASE_URL"
+    "mai-ds" => "AZURE_MAI_BASE_URL",
+    "grok" => "AZURE_XAI_BASE_URL"
   }
 
   @family_api_key_env_vars %{
@@ -245,7 +254,8 @@ defmodule ReqLLM.Providers.Azure do
     "o3" => "AZURE_OPENAI_API_KEY",
     "o4" => "AZURE_OPENAI_API_KEY",
     "deepseek" => "AZURE_DEEPSEEK_API_KEY",
-    "mai-ds" => "AZURE_MAI_API_KEY"
+    "mai-ds" => "AZURE_MAI_API_KEY",
+    "grok" => "AZURE_XAI_API_KEY"
   }
 
   @doc """
@@ -686,7 +696,7 @@ defmodule ReqLLM.Providers.Azure do
     model_id = effective_model_id(model)
 
     case get_model_family(model_id) do
-      family when family in ["gpt", "text-embedding", "o1", "o3", "o4", "deepseek", "mai-ds"] ->
+      family when family in @openai_compatible_families ->
         synthetic_model = %{model | provider: :openai}
         ReqLLM.Providers.OpenAI.translate_options(operation, synthetic_model, opts)
 

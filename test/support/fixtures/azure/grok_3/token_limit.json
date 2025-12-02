@@ -1,0 +1,168 @@
+{
+  "model_spec": "azure:grok-3",
+  "provider": "azure",
+  "request": {
+    "body": {
+      "b64": "eyJtYXhfdG9rZW5zIjoxMDAsIm1lc3NhZ2VzIjpbeyJjb250ZW50IjoiV3JpdGUgYSB2ZXJ5IGxvbmcgc3RvcnkgYWJvdXQgZHJhZ29ucyBhbmQgYWR2ZW50dXJlcyIsInJvbGUiOiJ1c2VyIn1dLCJuIjoxLCJzdHJlYW0iOmZhbHNlLCJ0ZW1wZXJhdHVyZSI6MC41fQ=="
+    },
+    "canonical_json": {
+      "max_tokens": 100,
+      "messages": [
+        {
+          "content": "Write a very long story about dragons and adventures",
+          "role": "user"
+        }
+      ],
+      "n": 1,
+      "stream": false,
+      "temperature": 0.5
+    },
+    "headers": {
+      "accept": [
+        "application/json"
+      ],
+      "accept-encoding": [
+        "gzip"
+      ],
+      "api-key": "[REDACTED:api-key]",
+      "content-type": [
+        "application/json"
+      ],
+      "user-agent": [
+        "req/0.5.16"
+      ]
+    },
+    "method": "post",
+    "url": "https://shelvick-test.cognitiveservices.azure.com/openai/deployments/grok-3/chat/completions?api-version=2025-04-01-preview"
+  },
+  "response": {
+    "body": {
+      "choices": [
+        {
+          "content_filter_results": {
+            "hate": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "self_harm": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "sexual": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "violence": {
+              "filtered": false,
+              "severity": "safe"
+            }
+          },
+          "finish_reason": "length",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "content": "### The Legend of the Dragon's Crest\n\nIn the ancient realm of Eldoria, where jagged mountains pierced the heavens and vast forests whispered secrets of old, dragons were not mere myths but living legends. They soared above the mortal world, their scales shimmering like molten gold or midnight sapphire, guardians of ancient magic and keepers of forgotten lore. Among the many tales told by firesides, none was more revered than the story of Kael, a young blacksmith’s apprentice, and his journey to uncover the Dragon",
+            "refusal": null,
+            "role": "assistant",
+            "tool_calls": null
+          },
+          "stop_reason": null
+        }
+      ],
+      "created": 1764647826,
+      "id": "16493f85-2333-47ff-b5ea-3b6ca979fbb6_sidecar",
+      "model": "grok-3",
+      "object": "chat.completion",
+      "prompt_filter_results": [
+        {
+          "content_filter_results": {
+            "hate": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "self_harm": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "sexual": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "violence": {
+              "filtered": false,
+              "severity": "safe"
+            }
+          },
+          "prompt_index": 0
+        }
+      ],
+      "usage": {
+        "audio_prompt_tokens": 0,
+        "completion_tokens": 100,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": 0,
+          "audio_tokens": 0,
+          "reasoning_tokens": 0,
+          "rejected_prediction_tokens": 0
+        },
+        "num_sources_used": 0,
+        "prompt_tokens": 15,
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": 0,
+          "text_tokens": 15
+        },
+        "total_tokens": 115
+      }
+    },
+    "headers": {
+      "apim-request-id": [
+        "0aa18d10-ee7b-4d09-b020-316badcd45ac"
+      ],
+      "content-type": [
+        "application/json"
+      ],
+      "date": [
+        "Tue, 02 Dec 2025 03:57:10 GMT"
+      ],
+      "prompt_token_len": [
+        "15"
+      ],
+      "request-context": [
+        "appId="
+      ],
+      "sampling_token_len": [
+        "100"
+      ],
+      "strict-transport-security": [
+        "max-age=31536000; includeSubDomains; preload"
+      ],
+      "transfer-encoding": [
+        "chunked"
+      ],
+      "vary": [
+        "Accept-Encoding"
+      ],
+      "x-content-type-options": [
+        "nosniff"
+      ],
+      "x-ms-region": [
+        "East US 2"
+      ],
+      "x-ratelimit-limit-requests": [
+        "4600"
+      ],
+      "x-ratelimit-limit-tokens": [
+        "4600000"
+      ],
+      "x-ratelimit-remaining-requests": [
+        "4595"
+      ],
+      "x-ratelimit-remaining-tokens": [
+        "4597252"
+      ]
+    },
+    "status": 200
+  }
+}

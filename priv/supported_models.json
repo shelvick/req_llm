@@ -459,6 +459,30 @@
     "status": "pass",
     "last_checked": "2025-11-29T00:11:05Z"
   },
+  "azure:grok-3": {
+    "status": "pass",
+    "last_checked": "2025-12-02T03:57:33Z"
+  },
+  "azure:grok-3-mini": {
+    "status": "pass",
+    "last_checked": "2025-12-02T03:57:33Z"
+  },
+  "azure:grok-4": {
+    "status": "excluded",
+    "last_checked": "2025-12-02T00:00:00Z"
+  },
+  "azure:grok-4-fast-non-reasoning": {
+    "status": "fail",
+    "last_checked": "2025-12-02T02:12:01Z"
+  },
+  "azure:grok-4-fast-reasoning": {
+    "status": "fail",
+    "last_checked": "2025-12-02T02:12:01Z"
+  },
+  "azure:grok-code-fast-1": {
+    "status": "excluded",
+    "last_checked": "2025-12-02T00:00:00Z"
+  },
   "azure:mai-ds-r1": {
     "status": "pass",
     "last_checked": "2025-12-02T00:11:42Z"

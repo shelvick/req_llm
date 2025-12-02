@@ -1,0 +1,206 @@
+{
+  "model_spec": "azure:grok-3-mini",
+  "provider": "azure",
+  "request": {
+    "body": {
+      "b64": "eyJtYXhfdG9rZW5zIjo4MTksIm1lc3NhZ2VzIjpbeyJjb250ZW50IjoiVXNlIHRoZSBhZGQgdG9vbCB0byBjb21wdXRlIDIgKyAzLiBBZnRlciB0aGUgdG9vbCByZXN1bHQgYXJyaXZlcywgcmVzcG9uZCB3aXRoICdzdW09PHZhbHVlPicuIiwicm9sZSI6InVzZXIifV0sIm4iOjEsInNlZWQiOjQyLCJzdHJlYW0iOmZhbHNlLCJ0ZW1wZXJhdHVyZSI6MC4wLCJ0b29sX2Nob2ljZSI6InJlcXVpcmVkIiwidG9vbHMiOlt7ImZ1bmN0aW9uIjp7ImRlc2NyaXB0aW9uIjoiQWRkIHR3byBpbnRlZ2VycyIsIm5hbWUiOiJhZGQiLCJwYXJhbWV0ZXJzIjp7ImFkZGl0aW9uYWxQcm9wZXJ0aWVzIjpmYWxzZSwicHJvcGVydGllcyI6eyJhIjp7InR5cGUiOiJpbnRlZ2VyIn0sImIiOnsidHlwZSI6ImludGVnZXIifX0sInJlcXVpcmVkIjpbImEiLCJiIl0sInR5cGUiOiJvYmplY3QifX0sInR5cGUiOiJmdW5jdGlvbiJ9XX0="
+    },
+    "canonical_json": {
+      "max_tokens": 819,
+      "messages": [
+        {
+          "content": "Use the add tool to compute 2 + 3. After the tool result arrives, respond with 'sum=<value>'.",
+          "role": "user"
+        }
+      ],
+      "n": 1,
+      "seed": 42,
+      "stream": false,
+      "temperature": 0.0,
+      "tool_choice": "required",
+      "tools": [
+        {
+          "function": {
+            "description": "Add two integers",
+            "name": "add",
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "a": {
+                  "type": "integer"
+                },
+                "b": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "a",
+                "b"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "headers": {
+      "accept": [
+        "application/json"
+      ],
+      "accept-encoding": [
+        "gzip"
+      ],
+      "api-key": "[REDACTED:api-key]",
+      "content-type": [
+        "application/json"
+      ],
+      "user-agent": [
+        "req/0.5.16"
+      ]
+    },
+    "method": "post",
+    "url": "https://shelvick-test.cognitiveservices.azure.com/openai/deployments/grok-3-mini/chat/completions?api-version=2025-04-01-preview"
+  },
+  "response": {
+    "body": {
+      "choices": [
+        {
+          "content_filter_results": {
+            "hate": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "self_harm": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "sexual": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "violence": {
+              "filtered": false,
+              "severity": "safe"
+            }
+          },
+          "finish_reason": "tool_calls",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "content": " ",
+            "reasoning_content": "First, the user wants me to use the \"add\" function to compute 2 + 3. The available actions include an \"add\" function that takes two integers and returns their sum.\n\nMy response must include a function call in a specific JSON format, enclosed in <function_call> tags. The format is: <function_call>{\"action\": \"function_name\", \"action_input\": {\"parameter\": \"argument\"}}</function_call>.\n\nFor the \"add\" function, the action is \"add\", and the action_input should have \"a\" and \"b\" as integers. So, for 2 + 3, I need to set \"a\" to 2 and \"b\" to 3.\n\nAfter the function call, the user says \"After the tool result arrives, respond with 'sum=<value>'.\" But as an AI, I'm supposed to make the function call, and presumably, the system will handle the result. My role is to make the function call, and I shouldn't make the response verbose. I need to keep it clear.\n\nThe instructions say: \"You are required to call a function to advance the user's request.\" And \"Your response MUST include a function call...\" So, in this response, I should only include the function call, as that's how I advance the request.\n\nThe user specified what to do after the tool result arrives, but that's for after the function call is executed. I don't need to handle that in this response; I just need to make the function call.\n\nAlso, the instructions say: \"Keep your response to user clear; please do not make your response verbose!\" So, I should not add extra text; just the function call.\n\nFinally, the function call should be in XML tags: <function_call> and </function_call>.\n\nSo, for this, the function call JSON should be: {\"action\": \"add\", \"action_input\": {\"a\": 2, \"b\": 3}}\n\nI need to enclose that in <function_call> tags.\n\nAfter this function call, when the result comes back, I might need to respond with 'sum=<value>', but that's probably handled in a subsequent step. For now, my response should just be the function call.\n\nThe user said: \"Use the add tool to compute 2 + 3. After the tool result arrives, respond with 'sum=<value>'.\" This might be instructing me on what to do next, but in the context of this interaction, I think I need to make the function call first.\n\nI should not ask for clarification since everything is clear.\n\nSo, my response should simply be:\n\n<function_call>{\"action\": \"add\", \"action_input\": {\"a\": 2, \"b\": 3}}</function_call>\n\nThat seems straightforward.",
+            "refusal": null,
+            "role": "assistant",
+            "tool_calls": [
+              {
+                "function": {
+                  "arguments": "{\"a\":2,\"b\":3}",
+                  "call_id": null,
+                  "name": "add"
+                },
+                "id": "call_11265427",
+                "type": "function"
+              }
+            ]
+          },
+          "stop_reason": null
+        }
+      ],
+      "created": 1764647830,
+      "id": "3c69c346-9e9b-476a-9d07-d477b10ecdb2_sidecar",
+      "model": "grok-3-mini-high",
+      "object": "chat.completion",
+      "prompt_filter_results": [
+        {
+          "content_filter_results": {
+            "hate": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "self_harm": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "sexual": {
+              "filtered": false,
+              "severity": "safe"
+            },
+            "violence": {
+              "filtered": false,
+              "severity": "safe"
+            }
+          },
+          "prompt_index": 0
+        }
+      ],
+      "usage": {
+        "audio_prompt_tokens": 0,
+        "completion_tokens": 30,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": 0,
+          "audio_tokens": 0,
+          "reasoning_tokens": 562,
+          "rejected_prediction_tokens": 0
+        },
+        "num_sources_used": 0,
+        "prompt_tokens": 187,
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cached_tokens": 0,
+          "image_tokens": 0,
+          "text_tokens": 187
+        },
+        "total_tokens": 779
+      }
+    },
+    "headers": {
+      "apim-request-id": [
+        "eb1e0462-e383-4496-8784-d3bec42552c9"
+      ],
+      "content-type": [
+        "application/json"
+      ],
+      "date": [
+        "Tue, 02 Dec 2025 03:57:14 GMT"
+      ],
+      "prompt_token_len": [
+        "187"
+      ],
+      "request-context": [
+        "appId="
+      ],
+      "sampling_token_len": [
+        "30"
+      ],
+      "strict-transport-security": [
+        "max-age=31536000; includeSubDomains; preload"
+      ],
+      "transfer-encoding": [
+        "chunked"
+      ],
+      "vary": [
+        "Accept-Encoding"
+      ],
+      "x-content-type-options": [
+        "nosniff"
+      ],
+      "x-ms-region": [
+        "East US 2"
+      ],
+      "x-ratelimit-limit-requests": [
+        "5000"
+      ],
+      "x-ratelimit-limit-tokens": [
+        "5000000"
+      ],
+      "x-ratelimit-remaining-requests": [
+        "4997"
+      ],
+      "x-ratelimit-remaining-tokens": [
+        "4998262"
+      ]
+    },
+    "status": 200
+  }
+}
