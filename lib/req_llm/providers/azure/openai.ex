@@ -44,7 +44,6 @@ defmodule ReqLLM.Providers.Azure.OpenAI do
   require Logger
   require ReqLLM.Debug, as: Debug
 
-
   @doc """
   Formats a ReqLLM context into OpenAI Chat Completions request format.
 
