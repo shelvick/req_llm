@@ -467,6 +467,291 @@ defmodule ReqLLM.Providers.AnthropicPromptCacheTest do
     end
   end
 
+  describe "message cache_control with offset" do
+    test "negative offset -1 caches last message" do
+      {:ok, model} = ReqLLM.model("anthropic:claude-sonnet-4-5-20250929")
+
+      context =
+        Context.new([
+          Context.system("You are helpful."),
+          Context.user("First question"),
+          Context.assistant("First answer"),
+          Context.user("Second question")
+        ])
+
+      {:ok, request} =
+        Anthropic.prepare_request(:chat, model, context,
+          anthropic_prompt_cache: true,
+          anthropic_cache_messages: -1
+        )
+
+      updated_request = Anthropic.encode_body(request)
+      decoded = Jason.decode!(updated_request.body)
+
+      messages = decoded["messages"]
+      assert length(messages) == 3
+
+      # -1 = last message (standard negative indexing)
+      [first_msg, second_msg, third_msg] = messages
+
+      refute has_cache_control?(first_msg)
+      refute has_cache_control?(second_msg)
+      assert has_cache_control?(third_msg)
+    end
+
+    test "negative offset -2 caches second-to-last message" do
+      {:ok, model} = ReqLLM.model("anthropic:claude-sonnet-4-5-20250929")
+
+      context =
+        Context.new([
+          Context.system("You are helpful."),
+          Context.user("First question"),
+          Context.assistant("First answer"),
+          Context.user("Second question")
+        ])
+
+      {:ok, request} =
+        Anthropic.prepare_request(:chat, model, context,
+          anthropic_prompt_cache: true,
+          anthropic_cache_messages: -2
+        )
+
+      updated_request = Anthropic.encode_body(request)
+      decoded = Jason.decode!(updated_request.body)
+
+      messages = decoded["messages"]
+      [first_msg, second_msg, third_msg] = messages
+
+      # -2 = second-to-last = assistant message (index 1)
+      refute has_cache_control?(first_msg)
+      assert has_cache_control?(second_msg)
+      refute has_cache_control?(third_msg)
+    end
+
+    test "offset 0 caches first message" do
+      {:ok, model} = ReqLLM.model("anthropic:claude-sonnet-4-5-20250929")
+
+      context =
+        Context.new([
+          Context.system("You are helpful."),
+          Context.user("First question"),
+          Context.assistant("First answer"),
+          Context.user("Second question")
+        ])
+
+      {:ok, request} =
+        Anthropic.prepare_request(:chat, model, context,
+          anthropic_prompt_cache: true,
+          anthropic_cache_messages: 0
+        )
+
+      updated_request = Anthropic.encode_body(request)
+      decoded = Jason.decode!(updated_request.body)
+
+      messages = decoded["messages"]
+      [first_msg, second_msg, third_msg] = messages
+
+      # 0 = first message
+      assert has_cache_control?(first_msg)
+      refute has_cache_control?(second_msg)
+      refute has_cache_control?(third_msg)
+    end
+
+    test "offset 1 caches second message" do
+      {:ok, model} = ReqLLM.model("anthropic:claude-sonnet-4-5-20250929")
+
+      context =
+        Context.new([
+          Context.system("You are helpful."),
+          Context.user("First question"),
+          Context.assistant("First answer"),
+          Context.user("Second question")
+        ])
+
+      {:ok, request} =
+        Anthropic.prepare_request(:chat, model, context,
+          anthropic_prompt_cache: true,
+          anthropic_cache_messages: 1
+        )
+
+      updated_request = Anthropic.encode_body(request)
+      decoded = Jason.decode!(updated_request.body)
+
+      messages = decoded["messages"]
+      [first_msg, second_msg, third_msg] = messages
+
+      # 1 = second message (assistant)
+      refute has_cache_control?(first_msg)
+      assert has_cache_control?(second_msg)
+      refute has_cache_control?(third_msg)
+    end
+
+    test "out-of-bounds positive offset returns body unchanged" do
+      {:ok, model} = ReqLLM.model("anthropic:claude-sonnet-4-5-20250929")
+      context = context_fixture()
+
+      {:ok, request} =
+        Anthropic.prepare_request(:chat, model, context,
+          anthropic_prompt_cache: true,
+          anthropic_cache_messages: 100
+        )
+
+      updated_request = Anthropic.encode_body(request)
+      decoded = Jason.decode!(updated_request.body)
+
+      # No message should have cache_control
+      for msg <- decoded["messages"] do
+        refute has_cache_control?(msg)
+      end
+    end
+
+    test "out-of-bounds negative offset returns body unchanged" do
+      {:ok, model} = ReqLLM.model("anthropic:claude-sonnet-4-5-20250929")
+      context = context_fixture()
+
+      {:ok, request} =
+        Anthropic.prepare_request(:chat, model, context,
+          anthropic_prompt_cache: true,
+          anthropic_cache_messages: -100
+        )
+
+      updated_request = Anthropic.encode_body(request)
+      decoded = Jason.decode!(updated_request.body)
+
+      # No message should have cache_control
+      for msg <- decoded["messages"] do
+        refute has_cache_control?(msg)
+      end
+    end
+
+    test "single message with offset -1 caches that message (last)" do
+      {:ok, model} = ReqLLM.model("anthropic:claude-sonnet-4-5-20250929")
+
+      # Only one non-system message
+      context =
+        Context.new([
+          Context.system("You are helpful."),
+          Context.user("Only message")
+        ])
+
+      {:ok, request} =
+        Anthropic.prepare_request(:chat, model, context,
+          anthropic_prompt_cache: true,
+          anthropic_cache_messages: -1
+        )
+
+      updated_request = Anthropic.encode_body(request)
+      decoded = Jason.decode!(updated_request.body)
+
+      # -1 = last message, so the only message gets cached
+      [only_msg] = decoded["messages"]
+      assert has_cache_control?(only_msg)
+    end
+
+    test "single message with offset 0 caches that message" do
+      {:ok, model} = ReqLLM.model("anthropic:claude-sonnet-4-5-20250929")
+
+      context =
+        Context.new([
+          Context.system("You are helpful."),
+          Context.user("Only message")
+        ])
+
+      {:ok, request} =
+        Anthropic.prepare_request(:chat, model, context,
+          anthropic_prompt_cache: true,
+          anthropic_cache_messages: 0
+        )
+
+      updated_request = Anthropic.encode_body(request)
+      decoded = Jason.decode!(updated_request.body)
+
+      [only_msg] = decoded["messages"]
+      assert has_cache_control?(only_msg)
+    end
+
+    test "single message with offset -2 returns unchanged (out of bounds)" do
+      {:ok, model} = ReqLLM.model("anthropic:claude-sonnet-4-5-20250929")
+
+      context =
+        Context.new([
+          Context.system("You are helpful."),
+          Context.user("Only message")
+        ])
+
+      {:ok, request} =
+        Anthropic.prepare_request(:chat, model, context,
+          anthropic_prompt_cache: true,
+          anthropic_cache_messages: -2
+        )
+
+      updated_request = Anthropic.encode_body(request)
+      decoded = Jason.decode!(updated_request.body)
+
+      # -2 on single message is out of bounds
+      [only_msg] = decoded["messages"]
+      refute has_cache_control?(only_msg)
+    end
+
+    test "empty messages with offset 0 returns unchanged" do
+      {:ok, model} = ReqLLM.model("anthropic:claude-sonnet-4-5-20250929")
+
+      # Only system message, no other messages
+      context = Context.new([Context.system("You are helpful.")])
+
+      {:ok, request} =
+        Anthropic.prepare_request(:chat, model, context,
+          anthropic_prompt_cache: true,
+          anthropic_cache_messages: 0
+        )
+
+      updated_request = Anthropic.encode_body(request)
+      decoded = Jason.decode!(updated_request.body)
+
+      # No messages to cache
+      assert decoded["messages"] == []
+    end
+
+    test "invalid type for anthropic_cache_messages returns validation error" do
+      {:ok, model} = ReqLLM.model("anthropic:claude-sonnet-4-5-20250929")
+      context = context_fixture()
+
+      # Schema validation rejects invalid types
+      {:error, error} =
+        Anthropic.prepare_request(:chat, model, context,
+          anthropic_prompt_cache: true,
+          anthropic_cache_messages: "invalid"
+        )
+
+      assert error.error.key == :anthropic_cache_messages
+    end
+
+    test "offset respects existing cache_control on message content blocks" do
+      # Directly test the internal function with pre-existing cache_control
+      body = %{
+        messages: [
+          %{role: "user", content: [%{type: "text", text: "msg1"}]},
+          %{
+            role: "assistant",
+            content: [
+              %{type: "text", text: "First part"},
+              %{type: "text", text: "Second part", cache_control: %{type: "ephemeral", ttl: "2h"}}
+            ]
+          }
+        ]
+      }
+
+      opts = [anthropic_prompt_cache: true, anthropic_cache_messages: 1]
+      result = Anthropic.maybe_apply_prompt_caching(body, opts)
+
+      [_first, second] = result[:messages]
+      [_first_block, last_block] = second[:content]
+
+      # Existing cache_control should be preserved, not overwritten
+      assert last_block[:cache_control] == %{type: "ephemeral", ttl: "2h"}
+    end
+  end
+
   # Helper to check if a message has cache_control on any content block
   defp has_cache_control?(%{"content" => content}) when is_list(content) do
     Enum.any?(content, &Map.has_key?(&1, "cache_control"))
