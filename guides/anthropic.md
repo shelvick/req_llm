@@ -50,15 +50,31 @@ Passed via `:provider_options` keyword:
 - **Example**: `provider_options: [anthropic_prompt_cache_ttl: "1h"]`
 
 ### `anthropic_cache_messages`
-- **Type**: Boolean
-- **Purpose**: Add cache breakpoint at last message (caches entire conversation for reuse in subsequent requests)
+- **Type**: Boolean or Integer
+- **Purpose**: Add cache breakpoint at a specific message position
 - **Requires**: `anthropic_prompt_cache: true`
-- **Example**: `provider_options: [anthropic_prompt_cache: true, anthropic_cache_messages: true]`
+- **Values**:
+  - `-1` or `true` - last message
+  - `-2` - second-to-last, `-3` - third-to-last, etc.
+  - `0` - first message, `1` - second, etc.
+- **Examples**:
+  ```elixir
+  # Cache entire conversation (breakpoint at last message)
+  provider_options: [anthropic_prompt_cache: true, anthropic_cache_messages: true]
+
+  # Cache up to second-to-last message (before final user input)
+  provider_options: [anthropic_prompt_cache: true, anthropic_cache_messages: -2]
+
+  # Cache only up to first message
+  provider_options: [anthropic_prompt_cache: true, anthropic_cache_messages: 0]
+  ```
 
 > **Note**: With `anthropic_prompt_cache: true`, system messages and tools are cached by default.
-> Enable `anthropic_cache_messages: true` to also cache the conversation history.
-> Subsequent requests with identical messages up to the cache breakpoint will be served
-> from cache, reducing costs and latency for multi-turn conversations.
+> Use `anthropic_cache_messages` to also cache conversation history. The offset applies to
+> the messages array (user, assistant, and tool results), not system messages.
+>
+> **Lookback limit**: Anthropic only checks up to 20 blocks before each cache breakpoint.
+> If you have many tools or long system prompts, consider where you place message breakpoints.
 
 ## Wire Format Notes
 

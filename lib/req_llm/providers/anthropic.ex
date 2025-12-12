@@ -64,9 +64,13 @@ defmodule ReqLLM.Providers.Anthropic do
       doc: "TTL for cache (\"1h\" for one hour; omit for default ~5m)"
     ],
     anthropic_cache_messages: [
-      type: :boolean,
-      doc:
-        "Add cache breakpoint at last message to cache conversation prefix (requires anthropic_prompt_cache: true)"
+      type: {:or, [:boolean, :integer]},
+      doc: """
+      Add cache breakpoint at a message position (requires anthropic_prompt_cache: true).
+      - `true` or `-1` - last message
+      - `-2` - second-to-last, `-3` - third-to-last, etc.
+      - `0` - first message, `1` - second, etc.
+      """
     ],
     anthropic_structured_output_mode: [
       type: {:in, [:auto, :json_schema, :tool_strict]},
@@ -533,7 +537,7 @@ defmodule ReqLLM.Providers.Anthropic do
       body
       |> maybe_cache_tools(cache_meta)
       |> maybe_cache_system(cache_meta)
-      |> maybe_cache_last_message(cache_meta, opts)
+      |> maybe_cache_message(cache_meta, opts)
     else
       body
     end
@@ -595,24 +599,39 @@ defmodule ReqLLM.Providers.Anthropic do
     end
   end
 
-  defp maybe_cache_last_message(body, cache_meta, opts) do
-    if get_option(opts, :anthropic_cache_messages, false) do
-      do_cache_last_message(body, cache_meta)
-    else
-      body
+  defp maybe_cache_message(body, cache_meta, opts) do
+    case get_option(opts, :anthropic_cache_messages, false) do
+      false ->
+        body
+
+      true ->
+        # true is alias for -1 (last message)
+        do_cache_message_at(body, cache_meta, -1)
+
+      offset when is_integer(offset) ->
+        do_cache_message_at(body, cache_meta, offset)
+
+      _ ->
+        body
     end
   end
 
-  defp do_cache_last_message(body, cache_meta) do
-    messages = Map.get(body, :messages, [])
+  defp do_cache_message_at(body, cache_meta, offset) do
+    # Handle nil explicitly (Map.get default only applies when key is absent)
+    messages = Map.get(body, :messages, []) || []
+    len = length(messages)
 
-    case Enum.reverse(messages) do
-      [] ->
-        body
+    # Standard negative indexing: -1 = last, -2 = second-to-last, etc.
+    # Non-negative: 0 = first, 1 = second, etc.
+    index = if offset < 0, do: len + offset, else: offset
 
-      [last | rest] ->
-        updated_last = add_cache_to_message_content(last, cache_meta)
-        Map.put(body, :messages, Enum.reverse([updated_last | rest]))
+    # Bounds check - silently return unchanged if out of bounds
+    if index < 0 or index >= len do
+      body
+    else
+      {before, [target | after_list]} = Enum.split(messages, index)
+      updated = add_cache_to_message_content(target, cache_meta)
+      Map.put(body, :messages, before ++ [updated | after_list])
     end
   end
 
