@@ -49,6 +49,17 @@ Passed via `:provider_options` keyword:
 - **Purpose**: Cache TTL (default ~5min if omitted)
 - **Example**: `provider_options: [anthropic_prompt_cache_ttl: "1h"]`
 
+### `anthropic_cache_messages`
+- **Type**: Boolean
+- **Purpose**: Add cache breakpoint at last message (caches entire conversation for reuse in subsequent requests)
+- **Requires**: `anthropic_prompt_cache: true`
+- **Example**: `provider_options: [anthropic_prompt_cache: true, anthropic_cache_messages: true]`
+
+> **Note**: With `anthropic_prompt_cache: true`, system messages and tools are cached by default.
+> Enable `anthropic_cache_messages: true` to also cache the conversation history.
+> Subsequent requests with identical messages up to the cache breakpoint will be served
+> from cache, reducing costs and latency for multi-turn conversations.
+
 ## Wire Format Notes
 
 - Endpoint: `/v1/messages`
