@@ -63,6 +63,11 @@ defmodule ReqLLM.Providers.Anthropic do
       type: :string,
       doc: "TTL for cache (\"1h\" for one hour; omit for default ~5m)"
     ],
+    anthropic_cache_messages: [
+      type: :boolean,
+      doc:
+        "Add cache breakpoint at last message to cache conversation prefix (requires anthropic_prompt_cache: true)"
+    ],
     anthropic_structured_output_mode: [
       type: {:in, [:auto, :json_schema, :tool_strict]},
       default: :auto,
@@ -528,6 +533,7 @@ defmodule ReqLLM.Providers.Anthropic do
       body
       |> maybe_cache_tools(cache_meta)
       |> maybe_cache_system(cache_meta)
+      |> maybe_cache_last_message(cache_meta, opts)
     else
       body
     end
@@ -589,6 +595,79 @@ defmodule ReqLLM.Providers.Anthropic do
     end
   end
 
+  defp maybe_cache_last_message(body, cache_meta, opts) do
+    if get_option(opts, :anthropic_cache_messages, false) do
+      do_cache_last_message(body, cache_meta)
+    else
+      body
+    end
+  end
+
+  defp do_cache_last_message(body, cache_meta) do
+    messages = Map.get(body, :messages, [])
+
+    case Enum.reverse(messages) do
+      [] ->
+        body
+
+      [last | rest] ->
+        updated_last = add_cache_to_message_content(last, cache_meta)
+        Map.put(body, :messages, Enum.reverse([updated_last | rest]))
+    end
+  end
+
+  defp add_cache_to_message_content(msg, cache_meta) do
+    content = Map.get(msg, :content) || Map.get(msg, "content")
+
+    updated_content =
+      case content do
+        # String content - convert to content block with cache_control
+        text when is_binary(text) ->
+          [%{type: "text", text: text, cache_control: cache_meta}]
+
+        # List content - add cache_control to last block
+        blocks when is_list(blocks) and blocks != [] ->
+          blocks
+          |> Enum.reverse()
+          |> case do
+            [last | rest] ->
+              updated_last =
+                if Map.has_key?(last, :cache_control) or Map.has_key?(last, "cache_control") do
+                  last
+                else
+                  Map.put(last, :cache_control, cache_meta)
+                end
+
+              Enum.reverse([updated_last | rest])
+
+            [] ->
+              []
+          end
+
+        # Expected empty cases - return as-is
+        nil ->
+          nil
+
+        [] ->
+          []
+
+        # Unexpected type - log and return as-is
+        other ->
+          Logger.debug(
+            "Unexpected content type for message cache_control injection: #{inspect(other)}"
+          )
+
+          other
+      end
+
+    # Preserve key type (atom or string)
+    if Map.has_key?(msg, :content) do
+      Map.put(msg, :content, updated_content)
+    else
+      Map.put(msg, "content", updated_content)
+    end
+  end
+
   defp add_basic_options(body, request_options) do
     body =
       Enum.reduce(@body_options, body, fn key, acc ->
@@ -613,10 +692,23 @@ defmodule ReqLLM.Providers.Anthropic do
 
         case get_option(options, :tool_choice) do
           nil -> body
-          choice -> Map.put(body, :tool_choice, choice)
+          choice -> Map.put(body, :tool_choice, normalize_tool_choice(choice))
         end
     end
   end
+
+  # Normalize tool_choice to Anthropic's expected format
+  # Anthropic expects: %{type: "auto"}, %{type: "any"}, or %{type: "tool", name: "..."}
+  defp normalize_tool_choice(:auto), do: %{type: "auto"}
+  defp normalize_tool_choice(:required), do: %{type: "any"}
+  defp normalize_tool_choice(:none), do: %{type: "none"}
+  defp normalize_tool_choice("auto"), do: %{type: "auto"}
+  defp normalize_tool_choice("required"), do: %{type: "any"}
+  defp normalize_tool_choice("none"), do: %{type: "none"}
+  defp normalize_tool_choice({:tool, name}) when is_binary(name), do: %{type: "tool", name: name}
+
+  defp normalize_tool_choice(%{type: _} = choice), do: choice
+  defp normalize_tool_choice(%{"type" => _} = choice), do: choice
 
   defp get_option(options, key, default \\ nil)
 
