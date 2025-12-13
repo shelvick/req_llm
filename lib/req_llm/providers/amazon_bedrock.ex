@@ -163,6 +163,15 @@ defmodule ReqLLM.Providers.AmazonBedrock do
       type: :string,
       doc: "TTL for cache (\"1h\" for one hour; omit for default ~5m)"
     ],
+    anthropic_cache_messages: [
+      type: {:or, [:boolean, :integer]},
+      doc: """
+      Add cache breakpoint at a message position (requires anthropic_prompt_cache: true).
+      - `-1` or `true` - last message
+      - `-2` - second-to-last, `-3` - third-to-last, etc.
+      - `0` - first message, `1` - second, etc.
+      """
+    ],
     service_tier: [
       type: {:in, ["priority", "default", "flex"]},
       default: "default",
