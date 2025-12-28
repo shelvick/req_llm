@@ -1,7 +1,7 @@
 defmodule ReqLLM.MixProject do
   use Mix.Project
 
-  @version "1.0.0"
+  @version "1.2.0"
   @source_url "https://github.com/agentjido/req_llm"
 
   def project do
@@ -20,7 +20,8 @@ defmodule ReqLLM.MixProject do
       # Dialyzer configuration
       dialyzer: [
         plt_add_apps: [:mix],
-        ignore_warnings: ".dialyzer_ignore.exs"
+        ignore_warnings: ".dialyzer_ignore.exs",
+        exclude_paths: ["test/support"]
       ],
 
       # Package
@@ -168,9 +169,9 @@ defmodule ReqLLM.MixProject do
       {:splode, "~> 0.2.3"},
       {:typedstruct, "~> 0.5"},
       {:uniq, "~> 0.6"},
-      {:zoi, "~> 0.10"},
+      {:zoi, "~> 0.14"},
       {:jsv, "~> 0.11"},
-      {:llm_db, github: "agentjido/llm_db", branch: "main", override: true},
+      {:llm_db, "~> 2025.12"},
 
       # Dev/test dependencies
       {:bandit, "~> 1.8", only: :dev, runtime: false},
@@ -181,6 +182,7 @@ defmodule ReqLLM.MixProject do
       {:quokka, "== 2.11.2", only: [:dev, :test], runtime: false},
       {:excoveralls, "~> 0.18", only: [:dev, :test], runtime: false},
       {:plug, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:git_ops, "~> 2.9", only: :dev, runtime: false},
       {:git_hooks, "~> 0.8", only: :dev, runtime: false}
     ]
   end
@@ -192,8 +194,10 @@ defmodule ReqLLM.MixProject do
       maintainers: ["Mike Hostetler"],
       links: %{
         "Changelog" => "https://hexdocs.pm/req_llm/changelog.html",
+        "Discord" => "https://agentjido.xyz/discord",
+        "Documentation" => "https://hexdocs.pm/req_llm",
         "GitHub" => @source_url,
-        "Elixir AI Discord" => "https://agentjido.xyz/discord"
+        "Website" => "https://agentjido.xyz"
       },
       files:
         ~w(lib priv mix.exs LICENSE README.md CHANGELOG.md CONTRIBUTING.md AGENTS.md usage-rules.md guides .formatter.exs)
@@ -202,11 +206,12 @@ defmodule ReqLLM.MixProject do
 
   defp aliases do
     [
+      setup: ["deps.get", "git_hooks.install"],
       quality: [
         "format --check-formatted",
         "compile --warnings-as-errors",
-        "dialyzer",
-        "credo --strict"
+        "credo --min-priority higher",
+        "dialyzer"
       ],
       q: ["quality"],
       docs: ["docs --formatter html"],
