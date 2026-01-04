@@ -912,7 +912,8 @@ defmodule ReqLLM.StreamServer do
           output: output,
           reasoning: reasoning,
           cached_input: cached_input,
-          cache_creation: cache_creation
+          cache_creation: cache_creation,
+          input_includes_cached: detect_input_includes_cached(usage)
         }
         |> add_token_aliases()
         |> add_cost_calculation_if_available(usage)
@@ -928,7 +929,8 @@ defmodule ReqLLM.StreamServer do
           output: output,
           reasoning: reasoning,
           cached_input: cached_input,
-          cache_creation: cache_creation
+          cache_creation: cache_creation,
+          input_includes_cached: detect_input_includes_cached(usage)
         }
         |> add_token_aliases()
         |> add_cost_calculation_if_available(usage)
@@ -948,7 +950,8 @@ defmodule ReqLLM.StreamServer do
           output: output,
           reasoning: reasoning,
           cached_input: cached_input,
-          cache_creation: cache_creation
+          cache_creation: cache_creation,
+          input_includes_cached: detect_input_includes_cached_atom_keys(usage)
         }
         |> add_token_aliases()
         |> add_cost_calculation_if_available(usage)
@@ -989,6 +992,51 @@ defmodule ReqLLM.StreamServer do
       Map.get(usage, "cacheWriteInputTokens") ||
       Map.get(usage, "cacheWriteInputTokenCount") ||
       Map.get(usage, "cache_write_input_tokens", 0)
+  end
+
+  # Detect whether the API format includes cached tokens in the input count.
+  # OpenAI API: prompt_tokens includes cached_tokens (returns true)
+  # Anthropic API: input_tokens excludes cache_read_input_tokens (returns false)
+  defp detect_input_includes_cached(usage) do
+    has_openai_format =
+      get_in(usage, ["prompt_tokens_details", "cached_tokens"]) != nil or
+        get_in(usage, [:prompt_tokens_details, :cached_tokens]) != nil or
+        get_in(usage, ["input_tokens_details", "cached_tokens"]) != nil or
+        get_in(usage, [:input_tokens_details, :cached_tokens]) != nil
+
+    has_anthropic_format =
+      Map.has_key?(usage, "cache_read_input_tokens") or
+        Map.has_key?(usage, :cache_read_input_tokens) or
+        Map.has_key?(usage, "cache_creation_input_tokens") or
+        Map.has_key?(usage, :cache_creation_input_tokens) or
+        Map.has_key?(usage, "cacheReadInputTokens") or
+        Map.has_key?(usage, :cacheReadInputTokens) or
+        Map.has_key?(usage, "cacheWriteInputTokens") or
+        Map.has_key?(usage, :cacheWriteInputTokens) or
+        Map.has_key?(usage, "cacheReadInputTokenCount") or
+        Map.has_key?(usage, :cacheReadInputTokenCount) or
+        Map.has_key?(usage, "cacheWriteInputTokenCount") or
+        Map.has_key?(usage, :cacheWriteInputTokenCount)
+
+    cond do
+      has_openai_format -> true
+      has_anthropic_format -> false
+      # Default: assume input includes cached (OpenAI-style, legacy behavior)
+      true -> true
+    end
+  end
+
+  # Same detection but for atom keys (for already-normalized responses)
+  defp detect_input_includes_cached_atom_keys(usage) do
+    has_anthropic_format =
+      Map.has_key?(usage, :cache_read_input_tokens) or
+        Map.has_key?(usage, :cache_creation_input_tokens) or
+        Map.has_key?(usage, :cacheReadInputTokens) or
+        Map.has_key?(usage, :cacheWriteInputTokens) or
+        Map.has_key?(usage, :cacheReadInputTokenCount) or
+        Map.has_key?(usage, :cacheWriteInputTokenCount)
+
+    if has_anthropic_format, do: false, else: true
   end
 
   defp add_token_aliases(usage) do
