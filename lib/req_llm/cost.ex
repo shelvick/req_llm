@@ -49,12 +49,37 @@ defmodule ReqLLM.Cost do
     with {:ok, input_num} <- safe_to_number(input_tokens),
          {:ok, output_num} <- safe_to_number(output_tokens),
          true <- input_rate != nil and output_rate != nil do
-      # Extract cache tokens
-      cache_read_tokens = clamp_tokens(Map.get(usage, :cached_input, 0), input_num)
-      cache_write_tokens = clamp_tokens(Map.get(usage, :cache_creation, 0), input_num)
+      # Get raw cache token values
+      raw_cache_read = safe_add(Map.get(usage, :cached_input, 0))
+      raw_cache_write = safe_add(Map.get(usage, :cache_creation, 0))
+      total_cache = raw_cache_read + raw_cache_write
 
-      # Regular input tokens (not from cache read, not written to cache)
-      regular_tokens = max(input_num - cache_read_tokens - cache_write_tokens, 0)
+      # Use the flag set during normalization to determine semantics.
+      # This flag is detected based on which API format fields were present.
+      # OpenAI format: input INCLUDES cached tokens
+      # Anthropic format: input EXCLUDES cached tokens
+      input_includes_cached = Map.get(usage, :input_includes_cached, true)
+
+      # Compute total input for clamping (sanity check)
+      total_input =
+        if input_includes_cached do
+          input_num
+        else
+          input_num + total_cache
+        end
+
+      cache_read_tokens = clamp_tokens(raw_cache_read, total_input)
+      cache_write_tokens = clamp_tokens(raw_cache_write, total_input)
+
+      # Regular input tokens (not from cache)
+      regular_tokens =
+        if input_includes_cached do
+          # OpenAI: input includes cached, so subtract to get regular
+          max(input_num - cache_read_tokens - cache_write_tokens, 0)
+        else
+          # Anthropic: input already excludes cached, this IS regular
+          max(input_num, 0)
+        end
 
       # Calculate costs (rates are per million tokens)
       input_cost =
@@ -122,4 +147,8 @@ defmodule ReqLLM.Cost do
   defp safe_to_number(value) when is_integer(value), do: {:ok, value}
   defp safe_to_number(value) when is_float(value), do: {:ok, trunc(value)}
   defp safe_to_number(_), do: :error
+
+  defp safe_add(nil), do: 0
+  defp safe_add(n) when is_number(n), do: n
+  defp safe_add(_), do: 0
 end

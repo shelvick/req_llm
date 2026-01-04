@@ -522,7 +522,8 @@ defmodule ReqLLM.Step.UsageTest do
 
       request = mock_request(model: model)
 
-      # Anthropic/Azure/Vertex format with cache tokens
+      # Anthropic format: input_tokens is NEW tokens only (excludes cached)
+      # Detected by presence of cache_read_input_tokens field
       response_body = %{
         "usage" => %{
           "input_tokens" => 1000,
@@ -541,15 +542,13 @@ defmodule ReqLLM.Step.UsageTest do
       assert usage_data.tokens.cached_input == 800
       assert usage_data.tokens.cache_creation == 100
 
+      # Anthropic semantics: input_tokens (1000) is NEW tokens, not total
       # Cost breakdown:
-      # Regular tokens: 1000 - 800 - 100 = 100 at $3.0/M = $0.0003
-      # Cache read tokens: 800 at $0.3/M = $0.00024
-      # Cache write tokens: 100 at $3.75/M = $0.000375
-      # Input cost: 0.0003 + 0.00024 + 0.000375 = $0.000915
-      # Output cost: 200 at $15/M = $0.003
-      # Total: $0.003915
+      # Regular tokens: 1000 at $3.0/M (this IS input_tokens for Anthropic)
+      # Cache read tokens: 800 at $0.3/M
+      # Cache write tokens: 100 at $3.75/M
 
-      expected_input_cost = Float.round((100 * 3.0 + 800 * 0.3 + 100 * 3.75) / 1_000_000, 6)
+      expected_input_cost = Float.round((1000 * 3.0 + 800 * 0.3 + 100 * 3.75) / 1_000_000, 6)
       expected_output_cost = Float.round(200 * 15.0 / 1_000_000, 6)
       expected_total = Float.round(expected_input_cost + expected_output_cost, 6)
 
@@ -569,7 +568,8 @@ defmodule ReqLLM.Step.UsageTest do
 
       request = mock_request(model: model)
 
-      # AWS Bedrock format (camelCase) - tests that fallback extractor handles these fields
+      # AWS Bedrock format (camelCase) uses Anthropic semantics:
+      # input_tokens is NEW tokens only (excludes cached)
       response_body = %{
         "usage" => %{
           "input_tokens" => 1000,
@@ -588,11 +588,12 @@ defmodule ReqLLM.Step.UsageTest do
       assert usage_data.tokens.cached_input == 600
       assert usage_data.tokens.cache_creation == 150
 
+      # Bedrock uses Anthropic semantics: input_tokens (1000) is NEW tokens
       # Cost breakdown:
-      # Regular tokens: 1000 - 600 - 150 = 250 at $3.0/M
+      # Regular tokens: 1000 at $3.0/M (this IS input_tokens for Bedrock)
       # Cache read tokens: 600 at $0.3/M
       # Cache write tokens: 150 at $3.75/M
-      expected_input_cost = Float.round((250 * 3.0 + 600 * 0.3 + 150 * 3.75) / 1_000_000, 6)
+      expected_input_cost = Float.round((1000 * 3.0 + 600 * 0.3 + 150 * 3.75) / 1_000_000, 6)
       expected_output_cost = Float.round(200 * 15.0 / 1_000_000, 6)
       expected_total = Float.round(expected_input_cost + expected_output_cost, 6)
 
@@ -650,6 +651,52 @@ defmodule ReqLLM.Step.UsageTest do
   describe "token clamping behavior" do
     setup do
       setup_telemetry()
+    end
+
+    test "handles Anthropic cache semantics where input_tokens excludes cached" do
+      # Bug fix test: Anthropic's input_tokens only contains NEW tokens (after cache).
+      # Example: input_tokens: 12, cache_read_input_tokens: 5484
+      # The old code clamped 5484 to 12, resulting in cached_tokens: 12 (wrong!)
+      # The fix detects Anthropic format (has cache_read_input_tokens field) and
+      # skips clamping since input excludes cached tokens (they're additive).
+      model = %LLMDB.Model{
+        provider: :anthropic,
+        id: "claude-3-5-sonnet",
+        cost: %{input: 3.0, output: 15.0, cache_read: 0.3}
+      }
+
+      request = mock_request(model: model)
+
+      response_body = %{
+        "usage" => %{
+          "input_tokens" => 12,
+          "output_tokens" => 200,
+          "cache_read_input_tokens" => 5484
+        }
+      }
+
+      response = mock_response(response_body)
+      {_req, updated_resp} = Usage.handle({request, response})
+
+      usage_data = updated_resp.private[:req_llm][:usage]
+      # input should be 12 (the new tokens)
+      assert usage_data.tokens.input == 12
+      # cached_input should be 5484, NOT clamped to 12
+      assert usage_data.tokens.cached_input == 5484
+      assert usage_data.tokens.output == 200
+
+      # Cost breakdown:
+      # Total input conceptually = 12 + 5484 = 5496
+      # Regular tokens: 12 at $3.0/M = $0.000036
+      # Cache read tokens: 5484 at $0.3/M = $0.0016452
+      # Input cost: 0.000036 + 0.0016452 = 0.0016812
+      # Output cost: 200 at $15/M = $0.003
+      # Total: $0.0046812
+      expected_input_cost = Float.round((12 * 3.0 + 5484 * 0.3) / 1_000_000, 6)
+      expected_output_cost = Float.round(200 * 15.0 / 1_000_000, 6)
+
+      assert usage_data.input_cost == expected_input_cost
+      assert usage_data.output_cost == expected_output_cost
     end
 
     test "clamps cached tokens when greater than input tokens" do

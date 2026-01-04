@@ -3,14 +3,28 @@ defmodule ReqLLM.CostTest do
 
   alias ReqLLM.Cost
 
-  describe "calculate/2" do
+  describe "calculate/2 with OpenAI semantics (input includes cached)" do
     test "returns nil for nil cost_map" do
-      usage = %{input: 1000, output: 500, cached_input: 0, cache_creation: 0}
+      usage = %{
+        input: 1000,
+        output: 500,
+        cached_input: 0,
+        cache_creation: 0,
+        input_includes_cached: true
+      }
+
       assert {:ok, nil} = Cost.calculate(usage, nil)
     end
 
     test "calculates basic cost without caching" do
-      usage = %{input: 1000, output: 500, cached_input: 0, cache_creation: 0}
+      usage = %{
+        input: 1000,
+        output: 500,
+        cached_input: 0,
+        cache_creation: 0,
+        input_includes_cached: true
+      }
+
       cost_map = %{input: 3.0, output: 15.0}
 
       {:ok, breakdown} = Cost.calculate(usage, cost_map)
@@ -22,12 +36,20 @@ defmodule ReqLLM.CostTest do
     end
 
     test "applies cache_read pricing for cached tokens" do
-      usage = %{input: 1000, output: 500, cached_input: 800, cache_creation: 0}
+      # OpenAI: input (1000) INCLUDES the 800 cached tokens
+      usage = %{
+        input: 1000,
+        output: 500,
+        cached_input: 800,
+        cache_creation: 0,
+        input_includes_cached: true
+      }
+
       cost_map = %{input: 3.0, output: 15.0, cache_read: 0.3}
 
       {:ok, breakdown} = Cost.calculate(usage, cost_map)
 
-      # 200 uncached at $3/M = $0.0006, 800 cached at $0.3/M = $0.00024
+      # 200 uncached at $3/M, 800 cached at $0.3/M
       expected_input = Float.round((200 * 3.0 + 800 * 0.3) / 1_000_000, 6)
       expected_output = Float.round(500 * 15.0 / 1_000_000, 6)
 
@@ -36,7 +58,15 @@ defmodule ReqLLM.CostTest do
     end
 
     test "applies cache_write pricing for creation tokens" do
-      usage = %{input: 1000, output: 500, cached_input: 0, cache_creation: 300}
+      # OpenAI: input (1000) INCLUDES the 300 cache creation tokens
+      usage = %{
+        input: 1000,
+        output: 500,
+        cached_input: 0,
+        cache_creation: 300,
+        input_includes_cached: true
+      }
+
       cost_map = %{input: 3.0, output: 15.0, cache_write: 3.75}
 
       {:ok, breakdown} = Cost.calculate(usage, cost_map)
@@ -50,7 +80,15 @@ defmodule ReqLLM.CostTest do
     end
 
     test "handles mixed cache read and write tokens" do
-      usage = %{input: 1000, output: 200, cached_input: 600, cache_creation: 200}
+      # OpenAI: input (1000) = 200 regular + 600 cached + 200 creation
+      usage = %{
+        input: 1000,
+        output: 200,
+        cached_input: 600,
+        cache_creation: 200,
+        input_includes_cached: true
+      }
+
       cost_map = %{input: 3.0, output: 15.0, cache_read: 0.3, cache_write: 3.75}
 
       {:ok, breakdown} = Cost.calculate(usage, cost_map)
@@ -64,7 +102,14 @@ defmodule ReqLLM.CostTest do
     end
 
     test "falls back to input rate when cache rates not specified" do
-      usage = %{input: 1000, output: 500, cached_input: 400, cache_creation: 200}
+      usage = %{
+        input: 1000,
+        output: 500,
+        cached_input: 400,
+        cache_creation: 200,
+        input_includes_cached: true
+      }
+
       cost_map = %{input: 3.0, output: 15.0}
 
       {:ok, breakdown} = Cost.calculate(usage, cost_map)
@@ -77,20 +122,38 @@ defmodule ReqLLM.CostTest do
       assert breakdown.output_cost == expected_output
     end
 
-    test "clamps cached tokens to not exceed input tokens" do
-      usage = %{input: 500, output: 200, cached_input: 800, cache_creation: 0}
+    test "clamps cached tokens that exceed input" do
+      # OpenAI semantics but with bad data: cached (800) > input (500)
+      # Should clamp cached to 500
+      usage = %{
+        input: 500,
+        output: 200,
+        cached_input: 800,
+        cache_creation: 0,
+        input_includes_cached: true
+      }
+
       cost_map = %{input: 3.0, output: 15.0, cache_read: 0.3}
 
       {:ok, breakdown} = Cost.calculate(usage, cost_map)
 
-      # cached_input clamped to 500 (all at cache rate, 0 regular)
+      # All 500 at cache rate (clamped), 0 regular
       expected_input = Float.round(500 * 0.3 / 1_000_000, 6)
+      expected_output = Float.round(200 * 15.0 / 1_000_000, 6)
 
       assert breakdown.input_cost == expected_input
+      assert breakdown.output_cost == expected_output
     end
 
     test "handles string keys in cost_map" do
-      usage = %{input: 1000, output: 500, cached_input: 0, cache_creation: 0}
+      usage = %{
+        input: 1000,
+        output: 500,
+        cached_input: 0,
+        cache_creation: 0,
+        input_includes_cached: true
+      }
+
       cost_map = %{"input" => 3.0, "output" => 15.0}
 
       {:ok, breakdown} = Cost.calculate(usage, cost_map)
@@ -111,6 +174,75 @@ defmodule ReqLLM.CostTest do
       cost_map = %{input: 3.0}
 
       assert {:ok, nil} = Cost.calculate(usage, cost_map)
+    end
+  end
+
+  describe "calculate/2 with Anthropic semantics (input excludes cached)" do
+    test "handles cached tokens correctly when input excludes cached" do
+      # Anthropic: input (500) is NEW tokens only, cached (800) is separate
+      # Total conceptual = 500 + 800 = 1300
+      usage = %{
+        input: 500,
+        output: 200,
+        cached_input: 800,
+        cache_creation: 0,
+        input_includes_cached: false
+      }
+
+      cost_map = %{input: 3.0, output: 15.0, cache_read: 0.3}
+
+      {:ok, breakdown} = Cost.calculate(usage, cost_map)
+
+      # 500 regular at $3/M, 800 cached at $0.3/M
+      expected_input = Float.round((500 * 3.0 + 800 * 0.3) / 1_000_000, 6)
+      expected_output = Float.round(200 * 15.0 / 1_000_000, 6)
+
+      assert breakdown.input_cost == expected_input
+      assert breakdown.output_cost == expected_output
+    end
+
+    test "handles real Anthropic usage pattern" do
+      # Real example: input_tokens: 12 (new only), cache_read_input_tokens: 5484
+      usage = %{
+        input: 12,
+        output: 200,
+        cached_input: 5484,
+        cache_creation: 0,
+        input_includes_cached: false
+      }
+
+      cost_map = %{input: 3.0, output: 15.0, cache_read: 0.3}
+
+      {:ok, breakdown} = Cost.calculate(usage, cost_map)
+
+      # 12 regular at $3/M, 5484 cached at $0.3/M
+      expected_input = Float.round((12 * 3.0 + 5484 * 0.3) / 1_000_000, 6)
+      expected_output = Float.round(200 * 15.0 / 1_000_000, 6)
+
+      assert breakdown.input_cost == expected_input
+      assert breakdown.output_cost == expected_output
+    end
+
+    test "handles cache creation tokens" do
+      # Anthropic: input (100) + cache_read (800) + cache_creation (200) = 1100 total
+      usage = %{
+        input: 100,
+        output: 200,
+        cached_input: 800,
+        cache_creation: 200,
+        input_includes_cached: false
+      }
+
+      cost_map = %{input: 3.0, output: 15.0, cache_read: 0.3, cache_write: 3.75}
+
+      {:ok, breakdown} = Cost.calculate(usage, cost_map)
+
+      # 100 regular at $3/M, 800 cached at $0.3/M, 200 creation at $3.75/M
+      expected_input = Float.round((100 * 3.0 + 800 * 0.3 + 200 * 3.75) / 1_000_000, 6)
+      expected_output = Float.round(200 * 15.0 / 1_000_000, 6)
+
+      assert breakdown.input_cost == expected_input
+      assert breakdown.output_cost == expected_output
     end
   end
 
